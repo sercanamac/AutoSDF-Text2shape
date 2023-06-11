@@ -103,12 +103,12 @@ def get_shape_comp_model(opt):
     # load tf stuff
     opt.model='rand_tf'
     opt.tf_cfg='configs/rand_tf_snet_code.yaml'
-    opt.ckpt = 'saved_ckpt/rand_tf-snet_code-all-LR1e-4-clean-epoch200.pth'
+    opt.ckpt = '/home/amac/data/rand_tf_singles_best.pth'
     
     # load vq stuff
     opt.vq_model='pvqvae'
     opt.vq_cfg='configs/pvqvae_snet.yaml'
-    opt.vq_ckpt='saved_ckpt/pvqvae-snet-all-LR1e-4-T0.2-rerun-epoch140.pth'
+    opt.vq_ckpt='/home/amac/data/vqvae.pth'
     
     ### opt.vq_dset='sdf_code' # original
     opt.vq_dset='snet'
@@ -137,6 +137,7 @@ def make_dummy_batch(bs):
     batch['idx'] = torch.zeros((bs,8,8,8),dtype=torch.int)
     batch['z_q'] = torch.zeros((bs,256,8,8,8))
     return batch
+
 
 def preprocess_sdf(sdf):
     # chair legs

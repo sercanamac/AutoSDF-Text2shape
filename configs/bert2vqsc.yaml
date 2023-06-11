@@ -1,0 +1,6 @@
+model:
+  mlp_layers: 3
+  mlp_hidden: 1024
+
+hyper_params:
+  warmup_steps: 10

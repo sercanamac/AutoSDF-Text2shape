@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 import numpy as np
 import einops
-import marching_cubes as mcubes
+import  mcubes
 from omegaconf import OmegaConf
 from termcolor import colored, cprint
 from einops import rearrange, repeat
@@ -56,8 +56,8 @@ class RandTransformerModel(BaseModel):
 
         self.vqvae = PVQVAE(ddconfig, n_embed, embed_dim)
         self.load_vqvae(opt.vq_ckpt)
-        self.vqvae.to(opt.device)
         self.vqvae.eval()
+        self.vqvae.to(opt.device)
 
         # modify the tf's embedding to be the codebook learned from vqvae
         self.tf.embedding_encoder = nn.Embedding(n_embed, embed_dim)
@@ -151,8 +151,6 @@ class RandTransformerModel(BaseModel):
         return ret
 
     def set_input(self, input=None, gen_order=None):
-        
-        self.x = input['sdf']
         self.x_idx = input['idx']
         self.z_q = input['z_q']
         bs, dz, hz, wz = self.x_idx.shape
@@ -181,9 +179,9 @@ class RandTransformerModel(BaseModel):
             else:
                 self.gen_order = gen_order
 
-        x_idx_seq_shuf = self.x_idx_seq[self.gen_order]
+        x_idx_seq_shuf = self.x_idx_seq[self.gen_order.to(self.x_idx_seq.device)]
         x_seq_shuffled = torch.cat([torch.LongTensor(1, bs).fill_(self.sos), x_idx_seq_shuf], dim=0)  # T+1
-        pos_shuffled = torch.cat([self.grid_table[:1], self.grid_table[1:][self.gen_order]], dim=0)   # T+1, <sos> should always at start.
+        pos_shuffled = torch.cat([self.grid_table[:1].to(self.gen_order.device), self.grid_table[1:].to(self.gen_order.device)[self.gen_order]], dim=0)   # T+1, <sos> should always at start.
 
         self.inp = x_seq_shuffled[:-1].clone()
         self.tgt = x_seq_shuffled[1:].clone()
@@ -194,7 +192,7 @@ class RandTransformerModel(BaseModel):
 
         vars_list = ['gen_order',
                      'inp', 'inp_pos', 'tgt', 'tgt_pos',
-                     'x_idx', 'x_idx_seq', 'z_q', 'x']
+                     'x_idx', 'x_idx_seq', 'z_q']
 
         self.tocuda(var_names=vars_list)
 
@@ -228,6 +226,7 @@ class RandTransformerModel(BaseModel):
             out[out < v[:, :, [-1]]] = -float('Inf')
             return out
         
+
         self.tf.eval()
 
         # context: 
@@ -244,16 +243,14 @@ class RandTransformerModel(BaseModel):
                 # if goes here, context_len will be given by gen_order
                 # +1 to include sos
                 seq_len = len(gen_order)+1
-
+                seq_len = 1
         self.set_input(data, gen_order=gen_order)
 
         T = self.x_idx_seq.shape[0] + 1 # +1 since <sos>
         B = self.x_idx_seq.shape[1]
-
         if prob is not None:
             prob = prob[self.gen_order]
             prob = torch.cat([prob[:1], prob])
-            
         with torch.no_grad():
             # auto-regressively gen
             pred = self.inp[:seq_len]
@@ -275,17 +272,18 @@ class RandTransformerModel(BaseModel):
                 if topk is not None:
                     # outp_t = top_k_probs(outp_t, k=topk)
                     outp_t = top_k_logits(outp_t, k=topk)
-
                 outp_t = F.softmax(outp_t, dim=-1) # compute prob
                 outp_t = rearrange(outp_t, 't b nc -> (t b) nc')
                 pred_t = torch.multinomial(outp_t, num_samples=1).squeeze(1)
                 pred_t = rearrange(pred_t, '(t b) -> t b', t=1, b=B)
                 pred = torch.cat([pred, pred_t], dim=0)
-
-            self.x = self.x
-            self.x_recon = self.vqvae.decode(self.z_q) # could extract this as well
+            
+            
+            self.x_recon = self.vqvae.decode_enc_idices(self.x_idx,  z_spatial_dim=self.grid_size).to(self.opt.device) # could extract this as well
+            self.x = self.x_recon
             pred = pred[1:][torch.argsort(self.gen_order)] # exclude pred[0] since it's <sos>
-            self.x_recon_tf = self.vqvae.decode_enc_idices(pred, z_spatial_dim=self.grid_size)
+            self.x_recon_tf = self.vqvae.decode_enc_idices(pred, z_spatial_dim=self.grid_size).to(self.opt.device)
+            self.pred = pred
 
         self.tf.train()
 

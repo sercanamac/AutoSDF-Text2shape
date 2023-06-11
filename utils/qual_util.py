@@ -108,6 +108,36 @@ def get_shape_comp_input_mesh(sdf_partial, sdf_missing):
     
     return mesh_comb
 
+def save_mesh_as_pics(mesh_renderer, mesh, nrow=3, out_name='1.gif'):
+    """ save batch of mesh into gif """
+
+    # img_comb = render_mesh(mesh_renderer, mesh, norm=False)    
+
+    # rotate
+    rot_comb = rotate_mesh_360(mesh_renderer, mesh) # save the first one
+    
+    # gather img into batches
+    nimgs = len(rot_comb)
+    nrots = len(rot_comb[0])
+    H, W, C = rot_comb[0][0].shape
+    rot_comb_img = []
+    for i in range(1):
+        img_grid_i = torch.zeros(nimgs, H, W, C)
+        for j in range(nimgs):
+            img_grid_i[j] = torch.from_numpy(rot_comb[j][i])
+            
+        img_grid_i = img_grid_i.permute(0, 3, 1, 2)
+        img_grid_i = vutils.make_grid(img_grid_i, nrow=nrow)
+        img_grid_i = img_grid_i.permute(1, 2, 0).numpy().astype(np.uint8)
+            
+        rot_comb_img.append(img_grid_i)
+    
+    with imageio.get_writer(out_name, mode='I', duration=.08) as writer:
+        
+        # combine them according to nrow
+        for rot in rot_comb_img:
+            writer.append_data(rot)
+
 def save_mesh_as_gif(mesh_renderer, mesh, nrow=3, out_name='1.gif'):
     """ save batch of mesh into gif """
 
@@ -272,14 +302,25 @@ def load_bert2vq_model(opt):
     
     net = BERT2VQ(opt)
     # bert2vq_ckpt = '/home/paritosh/Desktop/Capstone/clean-code/generative_transformers/logs/bert2vq-shapenet_lang-all-LR1e-4-cleanCode-langMode-/ckpt/bert2vq_epoch-145.pth'
-    bert2vq_ckpt = 'saved_ckpt/bert2vq_epoch-145.pth'
+    bert2vq_ckpt = '/home/amac/AutoSDF/logs/bert2vqsc-text2shape-chair-LR1e-4-cleanCode-langMode-/ckpt/bert2vq_epoch-latest.pth'
     state_dict = torch.load(bert2vq_ckpt)
     net.load_state_dict(state_dict['bert2vq'])
     net.eval()
     net.to(opt.device)
     
     return net
-
+def load_bert2vqsc_model(opt):
+    from models.networks.bert2vq_sc import BERT2VQ
+    
+    net = BERT2VQ(opt)
+    # bert2vq_ckpt = '/home/paritosh/Desktop/Capstone/clean-code/generative_transformers/logs/bert2vq-shapenet_lang-all-LR1e-4-cleanCode-langMode-/ckpt/bert2vq_epoch-145.pth'
+    bert2vq_ckpt = '/home/amac/AutoSDF/logs/bert2vqsc-text2shape-chair-LR1e-4-cleanCode-langMode-/ckpt/bert2vq_epoch-latest.pth'
+    state_dict = torch.load(bert2vq_ckpt)
+    net.load_state_dict(state_dict['bert2vq'])
+    net.eval()
+    net.to(opt.device)
+    
+    return net
 def get_lang_prob(bert_model,test_data,opt=None):
     lang_logits = bert_model(test_data)
     lang_logprob = F.log_softmax(lang_logits, dim=1) # compute the prob. of next ele
@@ -287,6 +328,13 @@ def get_lang_prob(bert_model,test_data,opt=None):
     lang_logprob = rearrange(lang_logprob, 'bs c d h w -> (d h w) bs c')
     return lang_logprob
     
+def get_lang_prob_recursive(bert_model,test_data, z1, opt=None):
+    lang_logits = bert_model(test_data, z1)
+    lang_logprob = F.log_softmax(lang_logits, dim=1) # compute the prob. of next ele
+    # img_logprob = torch.sum(img_logprob, dim=1) # multiply the image priors
+    lang_logprob = rearrange(lang_logprob, 'bs c d h w -> (d h w) bs c')
+    return lang_logprob
+
 def load_baseline_je_model(opt):
     from models.base_model import create_model
     # load baselineå stuff

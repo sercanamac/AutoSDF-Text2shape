@@ -12,20 +12,20 @@ nepochs_decay=200
 model='rand_tf'
 tf_cfg='configs/rand_tf_snet_code.yaml'
 
-cat='all'
+cat='chair'
 vq_model='pvqvae'
 vq_cfg='configs/pvqvae_snet.yaml'
-vq_ckpt='saved_ckpt/pvqvae-snet-all-LR1e-4-T0.2-rerun-epoch140.pth'
+vq_ckpt='../data/vqvae.pth'
 vq_dset='snet'
-vq_cat='all'
+vq_cat='chair'
 
 # dataset stuff
-batch_size=16
+batch_size=8
 max_dataset_size=10000000
-dataset_mode='snet_code'
+dataset_mode='snetcodesc'
 trunc_thres=0.2
 
-display_freq=300
+display_freq=3000
 print_freq=25
 
 today=$(date '+%m%d')

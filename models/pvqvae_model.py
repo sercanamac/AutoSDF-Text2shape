@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 import numpy as np
 import einops
-import marching_cubes as mcubes
+import mcubes
 import omegaconf
 from termcolor import colored
 from einops import rearrange
@@ -198,7 +198,6 @@ class PVQVAEModel(BaseModel):
         self.loss_codebook = log_dict_ae['loss_codebook']
         self.loss_nll = log_dict_ae['loss_nll']
         self.loss_rec = log_dict_ae['loss_rec']
-        self.loss_p = log_dict_ae['loss_p']
 
         self.loss.backward()
 
@@ -224,7 +223,6 @@ class PVQVAEModel(BaseModel):
             ('codebook', self.loss_codebook.data),
             ('nll', self.loss_nll.data),
             ('rec', self.loss_rec.data),
-            ('p', self.loss_p.data),
         ])
 
         return ret

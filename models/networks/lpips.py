@@ -4,8 +4,6 @@ import torch
 import torch.nn as nn
 from torchvision import models
 from collections import namedtuple
-
-from utils.lpips_util import get_ckpt_path
 from configs.paths import dataroot
 
 class LPIPS(nn.Module):

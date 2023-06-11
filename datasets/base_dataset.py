@@ -89,6 +89,21 @@ def CreateDataset(opt):
         train_dataset.initialize(opt, 'train', cat=opt.cat)
         test_dataset.initialize(opt, 'test', cat=opt.cat)
 
+    elif opt.dataset_mode == 'text2shape':
+        """ ShapeNet Image dataset. Need to load the code as well """
+        from datasets.text2shapepp_dataset import Text2ShapePP
+        train_dataset = Text2ShapePP()
+        test_dataset = Text2ShapePP()
+        train_dataset.initialize(opt, 'train', cat=opt.cat)
+        test_dataset.initialize(opt, 'test', cat=opt.cat)
+
+    elif opt.dataset_mode == 'snetcodesc':
+        """ ShapeNet Image dataset. Need to load the code as well """
+        from datasets.sc_snet_code_dataset import ScSnetCodeDataset
+        train_dataset = ScSnetCodeDataset()
+        test_dataset = ScSnetCodeDataset()
+        train_dataset.initialize(opt, 'train', cat=opt.cat)
+        test_dataset.initialize(opt, 'test', cat=opt.cat)
 
     else:
         raise ValueError("Dataset [%s] not recognized." % opt.dataset_mode)

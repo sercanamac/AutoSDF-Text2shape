@@ -1,7 +1,7 @@
 import h5py
 import trimesh
 import numpy as np
-import marching_cubes as mcubes
+import mcubes
 import einops
 from einops import rearrange, repeat
 from termcolor import cprint
@@ -327,7 +327,7 @@ def rotate_mesh_360(mesh_renderer, mesh):
 
     for i in range(36):
         cur_mesh = rotate_mesh(cur_mesh)
-        img = render_mesh(mesh_renderer, cur_mesh, norm=False) # b c h w # important!! no norm here or they will not align
+        img = render_mesh(mesh_renderer, cur_mesh, color=(127,127,127), norm=False) # b c h w # important!! no norm here or they will not align
         img = img.permute(0, 2, 3, 1) # b h w c
         img = img.detach().cpu().numpy()
         img = (img * 255).astype(np.uint8)

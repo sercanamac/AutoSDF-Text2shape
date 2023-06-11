@@ -37,3 +37,4 @@ data:
       params:
         config:
           size: 256
+    cat: "chair"

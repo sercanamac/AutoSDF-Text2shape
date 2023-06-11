@@ -37,7 +37,7 @@ class ShapeNetDataset(BaseDataset):
         self.opt = opt
         self.max_dataset_size = opt.max_dataset_size
 
-        with open(f'{dataroot}/ShapeNet/info.json') as f:
+        with open(f'{dataroot}/info.json') as f:
             self.info = json.load(f)
         # with open(f'{dataroot}/ShapeNet/all.csv', 'r') as f:
         #     header = f.readline()
@@ -57,12 +57,12 @@ class ShapeNetDataset(BaseDataset):
         for c in all_cats:
             synset = self.info['cats'][c]
             # with open(osp.join(data_dir, 'filelists', '{}_{}.lst'.format(synset, split))) as f:
-            with open(f'{dataroot}/ShapeNet/filelists/{synset}_{phase}.lst') as f:
+            with open(f'{dataroot}/filelists/{synset}_{phase}.lst') as f:
                 model_list_s = []
                 for l in f.readlines():
                     model_id = l.rstrip('\n')
                     
-                    path = f'{dataroot}/ShapeNet/SDF_v1_64/{synset}/{model_id}/ori_sample_grid.h5'
+                    path = f'{dataroot}/{synset}/{model_id}/ori_sample.h5'
                     model_list_s.append(path)
                 
                 self.model_list += model_list_s
@@ -265,7 +265,7 @@ class ShapeNetImgDataset(BaseDataset):
                     model_list_s.append(code_path)
 
                     # for sdf
-                    sdf_path = f'{dataroot}/ShapeNet/SDF_v1_64/{synset}/{model_id}/ori_sample_grid.h5'
+                    sdf_path = f'{dataroot}/ShapeNet/SDF_v1_64/{synset}/{model_id}/ori_sample.h5'
                     sdf_list_s.append(sdf_path)
 
                     # for vox

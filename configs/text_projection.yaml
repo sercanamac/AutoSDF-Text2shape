@@ -1,0 +1,6 @@
+model:
+  arch_v: "arch_v2"
+  params:
+    n_layers: 6
+    hidden_dim: 128 # This can be be a scalar or an array of size (n_layers,1)
+    apply_batch_norm: True

@@ -20,7 +20,7 @@ vq_dset='snet'
 vq_cat='chair'
 
 # dataset stuff
-batch_size=24
+batch_size=16
 max_dataset_size=10000000
 dataset_mode='owndataset'
 trunc_thres=0.2

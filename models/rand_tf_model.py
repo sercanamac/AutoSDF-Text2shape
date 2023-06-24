@@ -200,7 +200,7 @@ class RandTransformerModel(BaseModel):
 
         vars_list = ['gen_order',
                      'inp', 'inp_pos','tgt_pos',
-                     'x_idx', 'x_idx_seq','z_shape' ]
+                     'x_idx', 'x_idx_seq' ]
 
         self.tocuda(var_names=vars_list)
 
@@ -368,12 +368,14 @@ class RandTransformerModel(BaseModel):
     def backward(self):
         '''backward pass for the generator in training the unsupervised model'''
         #import pdb;pdb.set_trace()
+      
         target = rearrange(self.z_shape, 'seq p b -> b seq p')
+        target = target.to(self.outp.device)
         target = Categorical(target).sample()
         target = target.flatten(start_dim=1)
         target = rearrange(target, 'b seq -> (seq b)')
         target = target
-        print(target.shape,self.outp.shape,"SHAPEEEE")
+    
         outp = rearrange(self.outp, 'seq b cls-> (seq b) cls') # exclude the last one as its for <end>
         
         loss_nll = self.criterion_ce(outp, target)

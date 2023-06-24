@@ -3,7 +3,7 @@ import time
 import inspect
 
 from termcolor import colored, cprint
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 
 # profiler
 from torch import profiler

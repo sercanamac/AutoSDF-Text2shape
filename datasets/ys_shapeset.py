@@ -132,7 +132,7 @@ class ShapeNetZSets(Dataset):
         file_access_z_set, file_access_q_set = self.access_file(idx)
         #import pdb;pdb.set_trace()
         z_set = torch.load(file_access_z_set, map_location=torch.device('cpu'))
-        idx = sample_z_set(z_set)
+        idx = sample_z_set(z_set).long()
         q_set = torch.load(file_access_q_set, map_location=torch.device('cpu'))
 #         q_set = sample_z_set(z_set)
 #         #z_shape = q_set
@@ -142,10 +142,10 @@ class ShapeNetZSets(Dataset):
 
         
         return {
-            "z_set": z_set,
-            "q_set": q_set,
+            "z_set": z_set.float(),
+            "q_set": q_set.float(),
             "idx": idx,
-            "cat_str":"chair",
-            "cat_id":"03",
-            "z_q": z_set.permute(3,0,1,2)
+#             "cat_str":"chair",
+#             "cat_id":"03",
+            "z_q": z_set.permute(3,0,1,2).float()
         }

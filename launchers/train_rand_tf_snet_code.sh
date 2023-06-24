@@ -20,9 +20,9 @@ vq_dset='snet'
 vq_cat='chair'
 
 # dataset stuff
-batch_size=16
+batch_size=24
 max_dataset_size=10000000
-dataset_mode='snetcodesc'
+dataset_mode='owndataset'
 trunc_thres=0.2
 
 display_freq=3000
@@ -34,7 +34,7 @@ me=$(echo $me | cut -d'.' -f 1)
 
 note='clean'
 
-name="${model}-${dataset_mode}-${cat}-LR${lr}-${note}"
+name="own-dataset-z-sets-to-sampled-set-${model}-${dataset_mode}-${cat}-LR${lr}-${note}"
 
 logs_dir='logs'
 

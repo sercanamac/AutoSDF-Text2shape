@@ -19,6 +19,7 @@ import torchvision.transforms as transforms
 from models.base_model import BaseModel
 from models.networks.transformer_networks.rand_transformer import RandTransformer
 from models.networks.pvqvae_networks.auto_encoder import PVQVAE
+from torch.distributions import Categorical
 
 import utils.util
 from utils.util_3d import init_mesh_renderer, render_sdf
@@ -152,9 +153,14 @@ class RandTransformerModel(BaseModel):
 
     def set_input(self, input=None, gen_order=None):
         self.x_idx = input['idx']
-        self.z_q = input['z_q']
+        self.z_shape = input["q_set"]
+        self.z_shape_og = input["q_set"].clone()
+        #self.z_q = input['z_q']
         bs, dz, hz, wz = self.x_idx.shape
-        self.z_shape = self.z_q.shape
+        #self.z_shape = self.z_q.shape
+
+        self.z_shape_seq = rearrange(self.z_shape, 'bs dz hz wz p -> (dz hz wz) p bs').contiguous() 
+        self.z_shape = self.z_shape_seq.clone()
 
         if self.opt.dataset_mode in ['pix3d_img', 'snet_img']:
             self.gt_vox = input['gt_vox']
@@ -182,17 +188,19 @@ class RandTransformerModel(BaseModel):
         x_idx_seq_shuf = self.x_idx_seq[self.gen_order.to(self.x_idx_seq.device)]
         x_seq_shuffled = torch.cat([torch.LongTensor(1, bs).fill_(self.sos), x_idx_seq_shuf], dim=0)  # T+1
         pos_shuffled = torch.cat([self.grid_table[:1].to(self.gen_order.device), self.grid_table[1:].to(self.gen_order.device)[self.gen_order]], dim=0)   # T+1, <sos> should always at start.
+        z_shape_shuffled = self.z_shape[self.gen_order.to(self.x_idx_seq.device)]
 
         self.inp = x_seq_shuffled[:-1].clone()
         self.tgt = x_seq_shuffled[1:].clone()
         self.inp_pos = pos_shuffled[:-1].clone()
         self.tgt_pos = pos_shuffled[1:].clone()
+        self.z_shape = z_shape_shuffled.clone()
 
         self.counter += 1
 
         vars_list = ['gen_order',
-                     'inp', 'inp_pos', 'tgt', 'tgt_pos',
-                     'x_idx', 'x_idx_seq', 'z_q']
+                     'inp', 'inp_pos','tgt_pos',
+                     'x_idx', 'x_idx_seq','z_shape' ]
 
         self.tocuda(var_names=vars_list)
 
@@ -278,9 +286,14 @@ class RandTransformerModel(BaseModel):
                 pred_t = rearrange(pred_t, '(t b) -> t b', t=1, b=B)
                 pred = torch.cat([pred, pred_t], dim=0)
             
-            
+            target = Categorical(self.z_shape_og).sample().to(self.opt.device)
+            target = target.flatten(start_dim=1)
+            target = rearrange(target,'bs d -> d bs')
+            target = target.long()
+            self.image = self.vqvae.decode_enc_idices(target,  z_spatial_dim=self.grid_size).to(self.opt.device)
+
             self.x_recon = self.vqvae.decode_enc_idices(self.x_idx,  z_spatial_dim=self.grid_size).to(self.opt.device) # could extract this as well
-            self.x = self.x_recon
+            self.x = self.image
             pred = pred[1:][torch.argsort(self.gen_order)] # exclude pred[0] since it's <sos>
             self.x_recon_tf = self.vqvae.decode_enc_idices(pred, z_spatial_dim=self.grid_size).to(self.opt.device)
             self.pred = pred
@@ -354,7 +367,13 @@ class RandTransformerModel(BaseModel):
 
     def backward(self):
         '''backward pass for the generator in training the unsupervised model'''
-        target = rearrange(self.tgt, 'seq b -> (seq b)')
+        #import pdb;pdb.set_trace()
+        target = rearrange(self.z_shape, 'seq p b -> b seq p')
+        target = Categorical(target).sample()
+        target = target.flatten(start_dim=1)
+        target = rearrange(target, 'b seq -> (seq b)')
+        target = target
+        print(target.shape,self.outp.shape,"SHAPEEEE")
         outp = rearrange(self.outp, 'seq b cls-> (seq b) cls') # exclude the last one as its for <end>
         
         loss_nll = self.criterion_ce(outp, target)

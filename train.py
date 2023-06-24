@@ -72,6 +72,8 @@ if opt.profiler == '1':
     schedule = profiler.schedule(**schedule_args)
     activities = [profiler.ProfilerActivity.CPU, profiler.ProfilerActivity.CUDA]
 
+    
+print(len(train_dl),"LN")
 ################## main training loops #####################
 def train_one_epoch(pt_profiler=None):
     global total_steps

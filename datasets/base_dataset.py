@@ -104,6 +104,12 @@ def CreateDataset(opt):
         test_dataset = ScSnetCodeDataset()
         train_dataset.initialize(opt, 'train', cat=opt.cat)
         test_dataset.initialize(opt, 'test', cat=opt.cat)
+        
+    elif opt.dataset_mode =='owndataset':
+        from datasets.ys_shapeset import ShapeNetZSets
+        train_dataset = ShapeNetZSets()
+        test_dataset = ShapeNetZSets(isTrain=False)
+        
 
     else:
         raise ValueError("Dataset [%s] not recognized." % opt.dataset_mode)

@@ -7,7 +7,7 @@ import  mcubes
 from omegaconf import OmegaConf
 from termcolor import colored, cprint
 from einops import rearrange, repeat
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 
 import torch
 import torch.nn.functional as F

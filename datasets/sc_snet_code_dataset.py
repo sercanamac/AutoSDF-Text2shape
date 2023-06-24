@@ -42,15 +42,17 @@ class ScSnetCodeDataset(BaseDataset):
             for l in f.readlines():
                 model_id = l.rstrip('\n')
                 self.model_list.append(model_id)
-        all_files = glob.glob(f"../data/chairs/*/*")
+        #all_files = glob.glob(f"../data/chairs/*/*")
+        all_files = glob.glob("../raw_dataset/shapenet/*/*")
+      
         set_zs = [p for p in all_files if "z_set" in p and p.split("/")[-2] in self.model_list]
-        shape_zs = [p for p in all_files if "z" in p and "set" not in p and p.split("/")[-2] in self.model_list]
+        shape_zs = [p for p in all_files if "z" in p and "_set" not in p and p.split("/")[-2] in self.model_list]
 
         self.all_zs = np.array(shape_zs)
         
         
 
-        
+        #import pdb;pdb.set_trace()
         self.set2path = {p.split("/")[-1].split("_")[-1].replace(".pt", ""): p for p in set_zs}
         self.mod2code_path = {p.split("/")[-2]: p for p in shape_zs}
         # NOTE: set code_root here for transformer_model to load
@@ -82,6 +84,8 @@ class ScSnetCodeDataset(BaseDataset):
 
         return ret
     def __len__(self):
+        if(self.max_dataset_size and self.N > self.max_dataset_size):
+            return self.max_dataset_size
         return self.N
 
     def name(self):

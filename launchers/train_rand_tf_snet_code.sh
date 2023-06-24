@@ -6,7 +6,7 @@ gpu=0
 lr=1e-4
 
 nepochs=200
-nepochs_decay=200
+nepochs_decay=50
 
 # model stuff
 model='rand_tf'
@@ -15,12 +15,12 @@ tf_cfg='configs/rand_tf_snet_code.yaml'
 cat='chair'
 vq_model='pvqvae'
 vq_cfg='configs/pvqvae_snet.yaml'
-vq_ckpt='../data/vqvae.pth'
+vq_ckpt='../raw_dataset/checkpoints/vqvae.pth'
 vq_dset='snet'
 vq_cat='chair'
 
 # dataset stuff
-batch_size=8
+batch_size=16
 max_dataset_size=10000000
 dataset_mode='snetcodesc'
 trunc_thres=0.2
@@ -35,6 +35,8 @@ me=$(echo $me | cut -d'.' -f 1)
 note='clean'
 
 name="${model}-${dataset_mode}-${cat}-LR${lr}-${note}"
+
+logs_dir='logs'
 
 debug=0
 if [ $debug = 1 ]; then
@@ -56,4 +58,4 @@ CUDA_LAUNCH_BLOCKING=1 python train.py --name ${name} --gpu ${gpu} --lr ${lr} --
                 --nepochs ${nepochs} --nepochs_decay ${nepochs_decay} \
                 --dataset_mode ${dataset_mode} --cat ${cat} --max_dataset_size ${max_dataset_size} --trunc_thres ${trunc_thres} \
                 --display_freq ${display_freq} --print_freq ${print_freq} \
-                --debug ${debug}
+                --debug ${debug} --logs_dir ${logs_dir}

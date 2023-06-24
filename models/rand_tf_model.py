@@ -153,14 +153,15 @@ class RandTransformerModel(BaseModel):
 
     def set_input(self, input=None, gen_order=None):
         self.x_idx = input['idx']
-        self.z_shape = input["q_set"]
-        self.z_shape_og = input["q_set"].clone()
+        self.z_set = input["z_set"]
+        #self.z_shape_og = input["q_set"].clone()
         #self.z_q = input['z_q']
+        self.z_set = 
         bs, dz, hz, wz = self.x_idx.shape
         #self.z_shape = self.z_q.shape
 
-        self.z_shape_seq = rearrange(self.z_shape, 'bs dz hz wz p -> (dz hz wz) p bs').contiguous() 
-        self.z_shape = self.z_shape_seq.clone()
+        self.z_set_seq = rearrange(self.z_set, 'bs dz hz wz p -> (dz hz wz) p bs').contiguous() 
+        self.z_set = self.z_shape_seq.clone()
 
         if self.opt.dataset_mode in ['pix3d_img', 'snet_img']:
             self.gt_vox = input['gt_vox']
@@ -188,19 +189,19 @@ class RandTransformerModel(BaseModel):
         x_idx_seq_shuf = self.x_idx_seq[self.gen_order.to(self.x_idx_seq.device)]
         x_seq_shuffled = torch.cat([torch.LongTensor(1, bs).fill_(self.sos), x_idx_seq_shuf], dim=0)  # T+1
         pos_shuffled = torch.cat([self.grid_table[:1].to(self.gen_order.device), self.grid_table[1:].to(self.gen_order.device)[self.gen_order]], dim=0)   # T+1, <sos> should always at start.
-        z_shape_shuffled = self.z_shape[self.gen_order.to(self.x_idx_seq.device)]
+        z_set_shuffled = self.z_set[self.gen_order.to(self.x_idx_seq.device)]
 
         self.inp = x_seq_shuffled[:-1].clone()
         self.tgt = x_seq_shuffled[1:].clone()
         self.inp_pos = pos_shuffled[:-1].clone()
         self.tgt_pos = pos_shuffled[1:].clone()
-        self.z_shape = z_shape_shuffled.clone()
+        self.z_set = z_set_shuffled.clone()
 
         self.counter += 1
 
-        vars_list = ['gen_order',
+        vars_list = ['gen_order','tgt'
                      'inp', 'inp_pos','tgt_pos',
-                     'x_idx', 'x_idx_seq' ]
+                     'x_idx', 'x_idx_seq','z_set' ]
 
         self.tocuda(var_names=vars_list)
 
@@ -213,7 +214,7 @@ class RandTransformerModel(BaseModel):
             p(x_{t+1} | x_t, pos_t, pos_{t+1})
         """
         
-        self.outp = self.tf(self.inp, self.inp_pos, self.tgt_pos)#[:-1]
+        self.outp = self.tf(self.inp, self.inp_pos, self.tgt_pos,self.z_set)#[:-1]
 
         # for vis
         # with torch.no_grad():
@@ -369,13 +370,13 @@ class RandTransformerModel(BaseModel):
         '''backward pass for the generator in training the unsupervised model'''
         #import pdb;pdb.set_trace()
       
-        target = rearrange(self.z_shape, 'seq p b -> b seq p')
-        target = target.to(self.outp.device)
-        target = Categorical(target).sample()
-        target = target.flatten(start_dim=1)
-        target = rearrange(target, 'b seq -> (seq b)')
-        target = target
-    
+#         target = rearrange(self.z_shape, 'seq p b -> b seq p')
+#         target = target.to(self.outp.device)
+#         target = Categorical(target).sample()
+#         target = target.flatten(start_dim=1)
+#         target = rearrange(target, 'b seq -> (seq b)')
+#         target = target
+        target = rearrange(self.tgt, 'seq b -> (seq b)')
         outp = rearrange(self.outp, 'seq b cls-> (seq b) cls') # exclude the last one as its for <end>
         
         loss_nll = self.criterion_ce(outp, target)

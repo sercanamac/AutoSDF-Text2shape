@@ -67,8 +67,10 @@ class RandTransformer(nn.Module):
 
 #         self.fuse_linear.bias.data.normal_(0, 0.02)
 #         self.fuse_linear.weight.data.normal_(0, 0.02)
-         self.fuse_linear.bias.data.normal_(0, 0.02)
-         self.fuse_linear.weight.data.normal_(0, 0.02)
+        self.fuse_linear1.bias.data.normal_(0, 0.02)
+        self.fuse_linear1.weight.data.normal_(0, 0.02)
+        self.fuse_linear2.bias.data.normal_(0, 0.02)
+        self.fuse_linear2.weight.data.normal_(0, 0.02)
 
         self.dec_linear.bias.data.normal_(0, 0.02)
         self.dec_linear.weight.data.normal_(0, 0.02)
@@ -88,20 +90,28 @@ class RandTransformer(nn.Module):
         # output = self.decoder(tgt, memory, tgt_mask=tgt_mask)
         return output
 
-    def forward(self, inp, inp_posn, tgt_posn):
+    def forward(self, inp, inp_posn, tgt_posn,z_q=None):
         """ Here we will have the full sequence of inp """
         device = inp.get_device()
         seq_len, bs = inp.shape[:2]
         tgt_len = tgt_posn.shape[0]
-
+   
         # token embedding
         sos = inp[:1, :]
         inp_tokens = inp[1:, :]
         inp_val = torch.cat([self.embedding_start(sos), self.embedding_encoder(inp_tokens)], dim=0) * math.sqrt(self.d_tf)
         inp_posn = repeat(self.pos_embedding(inp_posn), 't pos_d -> t bs pos_d', bs=bs)
         tgt_posn = repeat(self.pos_embedding(tgt_posn), 't pos_d -> t bs pos_d', bs=bs)
-
-        inp = torch.cat([inp_val, inp_posn, tgt_posn], dim=-1)
+        
+        inp = None
+        if(z_q is not None):
+            z_q_concat = rearrange(z_q, 'indices probs bs -> indices bs probs')
+            #import pdb;pdb.set_trace();
+            #inp = torch.cat([inp_val, inp_posn, tgt_posn, z_q_concat], dim=-1)
+            inp = torch.cat([inp_val, inp_posn, tgt_posn,z_q_concat], dim = -1)
+        else:
+            inp = torch.cat([inp_val, inp_posn, tgt_posn],dim=-1)
+        
 
         # fusion
         inp = rearrange(inp, 't bs d -> (t bs) d')

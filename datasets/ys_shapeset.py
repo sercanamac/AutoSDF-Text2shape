@@ -95,7 +95,7 @@ class ShapeNetZSets(Dataset):
             file_name = self.shape_sets[idx]
             z_set_shape_id = self.shape_set_paths_json[file_name]
             directory = self.get_shape_directory(z_set_shape_id)
-            return f"{directory}/{file_name}", self.sample_z_set(z_set_shape_id, file_name)
+            return f"{directory}/{file_name}", f"{directory}/{Z_SHAPE_FILENAME}"
         else:
             adjusted_index = idx - len(self.shape_sets)
             shape_id = self.single_shapes[adjusted_index]
@@ -129,11 +129,12 @@ class ShapeNetZSets(Dataset):
             {z_set, q_set}: one hot encoded representations g^3 * codebook indices,
                             z_set is the input data and q_set is the target vector  
         """
+        print("HII")
         file_access_z_set, file_access_q_set = self.access_file(idx)
         #import pdb;pdb.set_trace()
         z_set = torch.load(file_access_z_set, map_location=torch.device('cpu'))
-        idx = sample_z_set(z_set).long()
         q_set = torch.load(file_access_q_set, map_location=torch.device('cpu'))
+        idx = sample_z_set(q_set).long()
 #         q_set = sample_z_set(z_set)
 #         #z_shape = q_set
 #         z_shape = torch.load(file_access_z_shape, map_location=torch.device('cpu'))

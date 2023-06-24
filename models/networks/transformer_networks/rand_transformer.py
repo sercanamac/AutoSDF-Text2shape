@@ -42,7 +42,9 @@ class RandTransformer(nn.Module):
 
         # position embedding
         self.pos_embedding = PEPixelTransformer(pe_conf=pe_conf)
-        self.fuse_linear = nn.Linear(embed_dim_vqvae+pos_embed_dim+pos_embed_dim, d_tf)
+        self.fuse_linear1 = nn.Linear(embed_dim_vqvae+pos_embed_dim+pos_embed_dim +512, 1024)
+        self.fuse_linear2 = nn.Linear(1024, d_tf)
+        self.fuse_linear = nn.Sequential(self.fuse_linear1,nn.ReLU(),self.fuse_linear2)
 
         # transformer
         encoder_layer = TransformerEncoderLayer(d_tf, nhead, dim_feedforward, dropout, activation='relu')
@@ -63,8 +65,10 @@ class RandTransformer(nn.Module):
         self.embedding_start.weight.data.uniform_(-1.0 / self.ntokens_vqvae, 1.0 / self.ntokens_vqvae)
         self.embedding_encoder.weight.data.uniform_(-1.0 / self.ntokens_vqvae, 1.0 / self.ntokens_vqvae)
 
-        self.fuse_linear.bias.data.normal_(0, 0.02)
-        self.fuse_linear.weight.data.normal_(0, 0.02)
+#         self.fuse_linear.bias.data.normal_(0, 0.02)
+#         self.fuse_linear.weight.data.normal_(0, 0.02)
+         self.fuse_linear.bias.data.normal_(0, 0.02)
+         self.fuse_linear.weight.data.normal_(0, 0.02)
 
         self.dec_linear.bias.data.normal_(0, 0.02)
         self.dec_linear.weight.data.normal_(0, 0.02)

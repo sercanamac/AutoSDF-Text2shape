@@ -25,6 +25,8 @@ max_dataset_size=10000000
 dataset_mode='owndataset'
 trunc_thres=0.2
 
+ckpt="./logs/valid-valid-with-fusion-rand_tf-owndataset-chair-LR1e-4-clean/ckpt/rand_tf_epoch-latest.pth"
+
 display_freq=3000
 print_freq=25
 
@@ -34,7 +36,7 @@ me=$(echo $me | cut -d'.' -f 1)
 
 note='clean'
 
-name="own-dataset-z-sets-to-sampled-set-${model}-${dataset_mode}-${cat}-LR${lr}-${note}"
+name="valid-valid-with-fusion-${model}-${dataset_mode}-${cat}-LR${lr}-${note}-with-ckpt"
 
 logs_dir='logs'
 
@@ -58,4 +60,4 @@ CUDA_LAUNCH_BLOCKING=1 python train.py --name ${name} --gpu ${gpu} --lr ${lr} --
                 --nepochs ${nepochs} --nepochs_decay ${nepochs_decay} \
                 --dataset_mode ${dataset_mode} --cat ${cat} --max_dataset_size ${max_dataset_size} --trunc_thres ${trunc_thres} \
                 --display_freq ${display_freq} --print_freq ${print_freq} \
-                --debug ${debug} --logs_dir ${logs_dir}
+                --debug ${debug} --logs_dir ${logs_dir} --ckpt ${ckpt}

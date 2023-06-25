@@ -129,7 +129,6 @@ class ShapeNetZSets(Dataset):
             {z_set, q_set}: one hot encoded representations g^3 * codebook indices,
                             z_set is the input data and q_set is the target vector  
         """
-        print("HII")
         file_access_z_set, file_access_q_set = self.access_file(idx)
         #import pdb;pdb.set_trace()
         z_set = torch.load(file_access_z_set, map_location=torch.device('cpu'))

@@ -46,6 +46,9 @@ def create_model(opt):
 
     model.initialize(opt)
     cprint("[*] Model has been created: %s" % model.name(), 'blue')
+    if(opt.ckpt is not None):
+        model.load_ckpt(opt.ckpt)
+        print("MODEL LOADED")
     return model
 
 # modified from https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix

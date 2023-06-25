@@ -156,12 +156,12 @@ class RandTransformerModel(BaseModel):
         self.z_set = input["z_set"]
         #self.z_shape_og = input["q_set"].clone()
         #self.z_q = input['z_q']
-        self.z_set = 
+        #self.og_indx = = input['idx'].clone() 
         bs, dz, hz, wz = self.x_idx.shape
         #self.z_shape = self.z_q.shape
 
         self.z_set_seq = rearrange(self.z_set, 'bs dz hz wz p -> (dz hz wz) p bs').contiguous() 
-        self.z_set = self.z_shape_seq.clone()
+        self.z_set = self.z_set_seq.clone()
 
         if self.opt.dataset_mode in ['pix3d_img', 'snet_img']:
             self.gt_vox = input['gt_vox']
@@ -199,7 +199,7 @@ class RandTransformerModel(BaseModel):
 
         self.counter += 1
 
-        vars_list = ['gen_order','tgt'
+        vars_list = ['gen_order','tgt',
                      'inp', 'inp_pos','tgt_pos',
                      'x_idx', 'x_idx_seq','z_set' ]
 
@@ -267,8 +267,9 @@ class RandTransformerModel(BaseModel):
                 inp = pred
                 inp_pos = self.inp_pos[:t]
                 tgt_pos = self.tgt_pos[:t]
+                z_set = self.z_set[:t]
                 # inp_mask = self.generate_square_subsequent_mask(transformer_inp.shape[0], self.opt.device)
-                outp = self.tf(inp, inp_pos, tgt_pos)
+                outp = self.tf(inp, inp_pos, tgt_pos, z_set)
                 outp_t = outp[-1:]
                 # outp_t = F.softmax(outp_t, dim=-1) # compute prob
                 outp_t = F.log_softmax(outp_t, dim=-1)
@@ -287,14 +288,14 @@ class RandTransformerModel(BaseModel):
                 pred_t = rearrange(pred_t, '(t b) -> t b', t=1, b=B)
                 pred = torch.cat([pred, pred_t], dim=0)
             
-            target = Categorical(self.z_shape_og).sample().to(self.opt.device)
-            target = target.flatten(start_dim=1)
-            target = rearrange(target,'bs d -> d bs')
-            target = target.long()
-            self.image = self.vqvae.decode_enc_idices(target,  z_spatial_dim=self.grid_size).to(self.opt.device)
+            #target = Categorical(self.z_shape_og).sample().to(self.opt.device)
+#             #target = target.flatten(start_dim=1)
+#             target = rearrange(target,'bs d -> d bs')
+#             target = target.long()
+            #self.image = self.vqvae.decode_enc_idices(self.x_idx,  z_spatial_dim=self.grid_size).to(self.opt.device)
 
             self.x_recon = self.vqvae.decode_enc_idices(self.x_idx,  z_spatial_dim=self.grid_size).to(self.opt.device) # could extract this as well
-            self.x = self.image
+            self.x = self.x_recon
             pred = pred[1:][torch.argsort(self.gen_order)] # exclude pred[0] since it's <sos>
             self.x_recon_tf = self.vqvae.decode_enc_idices(pred, z_spatial_dim=self.grid_size).to(self.opt.device)
             self.pred = pred

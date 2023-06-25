@@ -302,7 +302,7 @@ def load_bert2vq_model(opt):
     
     net = BERT2VQ(opt)
     # bert2vq_ckpt = '/home/paritosh/Desktop/Capstone/clean-code/generative_transformers/logs/bert2vq-shapenet_lang-all-LR1e-4-cleanCode-langMode-/ckpt/bert2vq_epoch-145.pth'
-    bert2vq_ckpt = '/home/amac/AutoSDF/logs/bert2vqsc-text2shape-chair-LR1e-4-cleanCode-langMode-/ckpt/bert2vq_epoch-latest.pth'
+    bert2vq_ckpt = '../raw_dataset/checkpoints/bert2vq_epoch-latest.pth'
     state_dict = torch.load(bert2vq_ckpt)
     net.load_state_dict(state_dict['bert2vq'])
     net.eval()
@@ -314,7 +314,7 @@ def load_bert2vqsc_model(opt):
     
     net = BERT2VQ(opt)
     # bert2vq_ckpt = '/home/paritosh/Desktop/Capstone/clean-code/generative_transformers/logs/bert2vq-shapenet_lang-all-LR1e-4-cleanCode-langMode-/ckpt/bert2vq_epoch-145.pth'
-    bert2vq_ckpt = '/home/amac/AutoSDF/logs/bert2vqsc-text2shape-chair-LR1e-4-cleanCode-langMode-/ckpt/bert2vq_epoch-latest.pth'
+    bert2vq_ckpt = '../raw_dataset/checkpoints/bert2vq_epoch-latest.pth'
     state_dict = torch.load(bert2vq_ckpt)
     net.load_state_dict(state_dict['bert2vq'])
     net.eval()

@@ -20,7 +20,6 @@ from datasets.base_dataset import BaseDataset
 from typing import List
 
 hostname = socket.gethostname()
-import time
 
 
 class Text2ShapePP(BaseDataset):
@@ -43,24 +42,22 @@ class Text2ShapePP(BaseDataset):
             for l in f.readlines():
                 model_id = l.rstrip('\n')
                 self.model_list.append(model_id)
-
         all_files = glob.glob(f"/shapenet/*/*")
         set_zs = [p for p in all_files if "z_set" in p and p.split("/")[-2] in self.model_list]
-        shape_zs = [p for p in all_files if "z" in p and "_set" not in p and p.split("/")[-2] in self.model_list]
+        shape_zs = [p for p in all_files if "z" in p and "set" not in p and p.split("/")[-2] in self.model_list]
         self.set2path = {p.split("/")[-1].split("_")[-1].replace(".pt", ""): p for p in set_zs}
         self.mod2code_path = {p.split("/")[-2]: p for p in shape_zs}
         # NOTE: set code_root here for transformer_model to load
         # opt.code_dir = self.code_dir
-    
-        self.text2shapepp = pd.read_csv('../raw_dataset/text2phrase.csv')
-#         with open("file.json", 'r') as f:
-#             all_id_list = json.load(f)
-        all_id_list = os.listdir("../raw_dataset/shapenet")
+
+        self.text2shapepp = pd.read_csv('./similar_phrase_2.csv')
+        with open("file.json", 'r') as f:
+            all_id_list = json.load(f)
         self.sequences: List = all_id_list
-        seq_to_keep = self.sequences
-#         for seq in self.sequences:
-#             if self.text2shapepp.iloc[seq[0]]["model_id"] in self.model_list:
-#                 seq_to_keep.append(seq)
+        seq_to_keep = []
+        for seq in self.sequences:
+            if self.text2shapepp.iloc[seq[0]]["model_id"] in self.model_list:
+                seq_to_keep.append(seq)
 
         self.sequences = seq_to_keep
         self.N = len(self.sequences)
@@ -69,6 +66,7 @@ class Text2ShapePP(BaseDataset):
 
     def __getitem__(self, index):
         try:
+        
             seq = self.sequences[index]
             t_1_ind = self.rng.integers(low=0, high=len(seq)-1)
             t_1_row_ind = seq[t_1_ind]
@@ -89,7 +87,7 @@ class Text2ShapePP(BaseDataset):
                 t_2_id = t_2_row["model_id"]
                 similar_ids = [t_2_row["model_id"]] + t_2_row["similar_model_ids"]
                 choosen_one = np.random.choice(similar_ids, 1)
-
+                
                 t_2_code = torch.load(self.mod2code_path[choosen_one], map_location="cpu")
                 
             else:
@@ -107,7 +105,6 @@ class Text2ShapePP(BaseDataset):
                 'cat_str': self.cat,
                 'path': t_1_id,
             }
-
         except:
             return self.__getitem__(self.rng.integers(0, len(self)))
 

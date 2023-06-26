@@ -20,7 +20,6 @@ from datasets.base_dataset import BaseDataset
 from typing import List
 
 hostname = socket.gethostname()
-import time
 
 
 class Text2ShapePP(BaseDataset):
@@ -67,6 +66,7 @@ class Text2ShapePP(BaseDataset):
 
     def __getitem__(self, index):
         try:
+        
             seq = self.sequences[index]
             t_1_ind = self.rng.integers(low=0, high=len(seq)-1)
             t_1_row_ind = seq[t_1_ind]
@@ -87,7 +87,7 @@ class Text2ShapePP(BaseDataset):
                 t_2_id = t_2_row["model_id"]
                 similar_ids = [t_2_row["model_id"]] + t_2_row["similar_model_ids"]
                 choosen_one = np.random.choice(similar_ids, 1)
-
+                
                 t_2_code = torch.load(self.mod2code_path[choosen_one], map_location="cpu")
                 
             else:
@@ -105,7 +105,6 @@ class Text2ShapePP(BaseDataset):
                 'cat_str': self.cat,
                 'path': t_1_id,
             }
-
         except:
             return self.__getitem__(self.rng.integers(0, len(self)))
 

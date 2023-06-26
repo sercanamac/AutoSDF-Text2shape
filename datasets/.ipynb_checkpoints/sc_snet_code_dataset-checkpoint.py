@@ -16,14 +16,15 @@ import torch
 
 from configs.paths import dataroot
 from datasets.base_dataset import BaseDataset
-
+import h5py
 from typing import List
 
 hostname = socket.gethostname()
-import time
+import pandas as pd
 
+import copy
 
-class Text2ShapePP(BaseDataset):
+class ScSnetCodeDataset(BaseDataset):
 
     # def initialize(self, opt, phase='train', cat='chair'):
     def initialize(self, opt, phase='train', cat='chair'):
@@ -43,70 +44,54 @@ class Text2ShapePP(BaseDataset):
             for l in f.readlines():
                 model_id = l.rstrip('\n')
                 self.model_list.append(model_id)
-        all_files = glob.glob(f"/shapenet/*/*")
+        all_files = glob.glob(f"../data/chairs/*/*")
         set_zs = [p for p in all_files if "z_set" in p and p.split("/")[-2] in self.model_list]
         shape_zs = [p for p in all_files if "z" in p and "set" not in p and p.split("/")[-2] in self.model_list]
+
+        self.all_zs = np.array(shape_zs)
+        self.text2shapepp = pd.read_csv('./similar_phrase_2.csv')
+        
+        
+
+        
         self.set2path = {p.split("/")[-1].split("_")[-1].replace(".pt", ""): p for p in set_zs}
         self.mod2code_path = {p.split("/")[-2]: p for p in shape_zs}
         # NOTE: set code_root here for transformer_model to load
         # opt.code_dir = self.code_dir
-
-        self.text2shapepp = pd.read_csv('./similar_phrase_2.csv')
-        with open("file.json", 'r') as f:
-            all_id_list = json.load(f)
-        self.sequences: List = all_id_list
-        seq_to_keep = []
-        for seq in self.sequences:
-            if self.text2shapepp.iloc[seq[0]]["model_id"] in self.model_list:
-                seq_to_keep.append(seq)
-
-        self.sequences = seq_to_keep
-        self.N = len(self.sequences)
+        self.N = len(self.all_zs)
         self.rng = np.random.default_rng(0)
+        np.random.shuffle(self.all_zs)
 
 
     def __getitem__(self, index):
         try:
-            seq = self.sequences[index]
-            t_1_ind = self.rng.integers(low=0, high=len(seq)-1)
-            t_1_row_ind = seq[t_1_ind]
-            t_2_row_ind = seq[t_1_ind+1]
-            t_1_row = self.text2shapepp.iloc[t_1_row_ind]
-            t_2_row = self.text2shapepp.iloc[t_2_row_ind]
-            t_2_text = t_2_row["phrase_texts"]
-            t_1_text = t_1_row["phrase_texts"]
 
-            if t_1_row["similar_model_id"] == '0':
-                t_1_id = t_1_row["model_id"]
-                t_1_code = torch.load(self.mod2code_path[t_1_id], map_location="cpu")
+            path = self.all_zs[index]
+            sdf_path = "/".join(path.split("/")[:-1] + ["ori_sample.h5"])
+            z = torch.load(path, map_device="cpu")
+            if "set" in path:
+                row_id = int(path.split("_")[-1].replace(".pt",""))
+                similar_shapes = [self.text2shapepp.iloc[row_id]["model_id"]] + self.text2shapepp.iloc[row_id]["similar_model_ids"]
+                shape_selected = random.choice(similar_shapes, 1)
+                new_path = copy.deepcopy(path)
+                new_path = new_path.split("/")
+                new_path[-2] = shape_selected
+                new_path[-1] = "z_shape.pt"
+                new_path = "/".join(new_path)
+                tgt = torch.load(new_path, map_device="cpu")
             else:
-                t_1_code = torch.load(self.set2path[str(t_1_row_ind)], map_location="cpu")
-
-
-            if t_2_row["similar_model_id"] == '0':
-                t_2_id = t_2_row["model_id"]
-                similar_ids = [t_2_row["model_id"]] + t_2_row["similar_model_ids"]
-                choosen_one = np.random.choice(similar_ids, 1)
-
-                t_2_code = torch.load(self.mod2code_path[choosen_one], map_location="cpu")
+                tgt = z
                 
-            else:
-                t_2_code = torch.load(self.set2path[str(t_2_row_ind)], map_location="cpu")
-            
-            
-            sampler = torch.distributions.categorical.Categorical(t_2_code)
-            codeix = sampler.sample()
             ret = {
-                'z_q': t_1_code,
-                'idx': codeix,
-                'text': t_2_text,
-                'text_t1': t_1_text,
+                'z_q': z.permute(3,0,1,2),
+                'idx': z.permute(3,0,1,2),
                 'cat_id': self.cat_to_id[self.cat],
                 'cat_str': self.cat,
-                'path': t_1_id,
+                'path': sdf_path,
+                "tgt": torch.argmax(tgt, axis=-1),                
             }
-
-        except:
+        except Exception as e:
+            print(e)
             return self.__getitem__(self.rng.integers(0, len(self)))
 
         return ret

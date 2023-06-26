@@ -5,7 +5,7 @@ from turtle import forward
 
 import numpy as np
 import einops
-import marching_cubes as mcubes
+import mcubes
 from omegaconf import OmegaConf
 from termcolor import colored, cprint
 from einops import rearrange, repeat
@@ -109,7 +109,6 @@ class BERT2VQModel(BaseModel):
     
     def set_input(self, input, gen_order=None):
         # x, y = input
-        self.x = input['sdf']
         self.x_idx = input['idx']
         self.z_q = input['z_q']
         bs, dz, hz, wz = self.x_idx.shape
@@ -120,7 +119,7 @@ class BERT2VQModel(BaseModel):
         self.x_idx_seq = rearrange(self.x_idx, 'bs dz hz wz -> (dz hz wz) bs').contiguous() # to (T, B)
         self.x_idx = self.x_idx_seq.clone()
 
-        vars_list = ['x_idx', 'z_q', 'x']
+        vars_list = ['x_idx', 'z_q']
 
         self.tocuda(var_names=vars_list)
     

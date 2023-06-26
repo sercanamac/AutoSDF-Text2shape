@@ -18,7 +18,7 @@ class BERT2VQ(nn.Module):
         else:
             self.device + "cpu"
         ntoken=512
-        nblocks = 2
+        nblocks = 4
         use_attn = False
         convt_layers = []
         
@@ -34,10 +34,10 @@ class BERT2VQ(nn.Module):
         self.linear_to3d = nn.Linear(1024, self.hz * self.wz * self.dz)
         self.activation = nn.ReLU()
         self.linear3d_to_conv = torch.nn.Conv3d(1, in_c, 3, 1, 1)
-        in_c *= 2
+        in_c +=1
         for i in range(nblocks):
             out_c = in_c
-            convt_layers.append(PVQVAEResnetBlock(in_channels=in_c, out_channels=out_c, temb_channels=0, dropout=0.1))
+            convt_layers.append(PVQVAEResnetBlock(in_channels=in_c, out_channels=out_c, temb_channels=0, dropout=0.1, use_bn=True))
             if use_attn:
                 convt_layers.append( AttnBlock(out_c) )
             in_c = out_c
@@ -50,7 +50,6 @@ class BERT2VQ(nn.Module):
         
         self.convt_layers = nn.Sequential(*convt_layers)
 
-        self.norm_out = Normalize(in_c)
         self.conv_out = torch.nn.Conv3d(in_c, ntoken, 3, 1, 1)
     
     def forward(self, x, z1):
@@ -68,12 +67,11 @@ class BERT2VQ(nn.Module):
         x = rearrange(x, 'b c (d h w) -> b c d h w', d=8, h=8, w=8)
 
 
-        x = self.linear3d_to_conv(x)
+        # x = self.linear3d_to_conv(x)
         x = torch.cat([x, z1], axis=1)
         x = self.convt_layers(x)
 
 
-        x = self.norm_out(x)
         x = self.conv_out(x)
 
         return x

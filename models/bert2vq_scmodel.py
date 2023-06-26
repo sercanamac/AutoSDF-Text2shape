@@ -150,6 +150,8 @@ class BERT2VQSCModel(BaseModel):
         self.optimizer.zero_grad()
         self.backward()
         self.optimizer.step()
+        self.total_steps = total_steps
+        
     
     def get_current_errors(self):
         
@@ -167,13 +169,17 @@ class BERT2VQSCModel(BaseModel):
                             
         return OrderedDict()
 
-    def save(self, label):
+    def save(self, label, epoch=None):
 
         state_dict = {
             # 'vqvae': self.vqvae.cpu().state_dict(),
             'bert2vq': self.net.cpu().state_dict(),
+            'optimizer': self.optimizer.state_dict(),
+            'scheduler': self.scheduler.state_dict(),
+            'epoch': epoch,
+            'total_steps': self.total_steps
         }
-
+    
         save_filename = 'bert2vq_%s.pth' % (label)
         save_path = os.path.join(self.save_dir, save_filename)
 
@@ -189,4 +195,9 @@ class BERT2VQSCModel(BaseModel):
 
         # self.vqvae.load_state_dict(state_dict['vqvae'])
         self.net.load_state_dict(state_dict['bert2vq'])
+        if 'optimizer' in state_dict:
+            self.optimizer.load_state_dict(state_dict['optimizer'])
+        if 'scheduler' in state_dict:
+            self.scheduler.load_state_dict(state_dict['scheduler'])
+            
         print(colored('[*] weight successfully load from: %s' % ckpt, 'blue'))

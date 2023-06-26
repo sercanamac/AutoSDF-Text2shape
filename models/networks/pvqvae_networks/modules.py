@@ -16,7 +16,7 @@ def Normalize(in_channels, use_bn=False):
     else:
         num_groups = 32
 
-    return torch.nn.GroupNorm(num_groups=num_groups, num_channels=in_channels, eps=1e-6, affine=True) if not use_bn else torch.nn.BatchNorm2d(in_channels)
+    return torch.nn.GroupNorm(num_groups=num_groups, num_channels=in_channels, eps=1e-6, affine=True) if not use_bn else torch.nn.BatchNorm3d(in_channels)
 
 
 class Upsample(nn.Module):

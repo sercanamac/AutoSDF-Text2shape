@@ -330,7 +330,7 @@ def get_lang_prob(bert_model,test_data,opt=None):
     
 def get_lang_prob_recursive(bert_model,test_data, z1, opt=None):
     lang_logits = bert_model(test_data, z1)
-    lang_logprob = F.log_softmax(lang_logits, dim=1) # compute the prob. of next ele
+    lang_logprob = F.softmax(lang_logits, dim=1) # compute the prob. of next ele
     # img_logprob = torch.sum(img_logprob, dim=1) # multiply the image priors
     lang_logprob = rearrange(lang_logprob, 'bs c d h w -> (d h w) bs c')
     return lang_logprob

@@ -37,7 +37,7 @@ class BERT2VQ(nn.Module):
         in_c +=1
         for i in range(nblocks):
             out_c = in_c
-            convt_layers.append(PVQVAEResnetBlock(in_channels=in_c, out_channels=out_c, temb_channels=0, dropout=0.1,))
+            convt_layers.append(PVQVAEResnetBlock(in_channels=in_c, out_channels=out_c, temb_channels=0, dropout=0.1,use_bn=True))
             if use_attn:
                 convt_layers.append( AttnBlock(out_c) )
             in_c = out_c

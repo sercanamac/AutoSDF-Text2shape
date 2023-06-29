@@ -263,6 +263,8 @@ class RandTransformerModel(BaseModel):
         with torch.no_grad():
             # auto-regressively gen
             pred = self.inp[:seq_len]
+            self.outp_concat = None
+            flag = False
             for t in tqdm(range(seq_len, T), total=T-seq_len, desc='[*] autoregressively inferencing...'):
                 inp = pred
                 inp_pos = self.inp_pos[:t]
@@ -271,8 +273,12 @@ class RandTransformerModel(BaseModel):
                 # inp_mask = self.generate_square_subsequent_mask(transformer_inp.shape[0], self.opt.device)
                 outp = self.tf(inp, inp_pos, tgt_pos, z_set)
                 outp_t = outp[-1:]
-                # outp_t = F.softmax(outp_t, dim=-1) # compute prob
-                outp_t = F.log_softmax(outp_t, dim=-1)
+               
+  
+             
+                 
+                #outp_t = F.softmax(outp_t, dim=-1) # compute prob
+                #outp_t = F.log_softmax(outp_t, dim=-1)
 
                 if prob is not None:
                     # outp_t *= prob[t:t+1]
@@ -287,6 +293,13 @@ class RandTransformerModel(BaseModel):
                 pred_t = torch.multinomial(outp_t, num_samples=1).squeeze(1)
                 pred_t = rearrange(pred_t, '(t b) -> t b', t=1, b=B)
                 pred = torch.cat([pred, pred_t], dim=0)
+                
+                if(self.outp_concat is None):
+                     self.outp_concat = outp_t
+                else:
+                    self.outp_concat = torch.cat([self.outp_concat,outp_t])
+                    
+                
             
             #target = Categorical(self.z_shape_og).sample().to(self.opt.device)
 #             #target = target.flatten(start_dim=1)

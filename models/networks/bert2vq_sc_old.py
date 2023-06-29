@@ -17,7 +17,7 @@ class BERT2VQ(nn.Module):
         else:
             self.device + "cpu"
         ntoken=512
-        nblocks = 2
+        nblocks = 4
         use_attn = False
         convt_layers = []
         

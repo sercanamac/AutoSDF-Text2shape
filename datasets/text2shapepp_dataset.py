@@ -44,40 +44,52 @@ class Text2ShapePP(BaseDataset):
                 model_id = l.rstrip('\n')
                 self.model_list.append(model_id)
 
-        all_files = glob.glob(f"/shapenet/*/*")
-        set_zs = [p for p in all_files if "z_set" in p and p.split("/")[-2] in self.model_list]
-        shape_zs = [p for p in all_files if "z" in p and "_set" not in p and p.split("/")[-2] in self.model_list]
+        all_files = glob.glob(f"../raw_dataset/shapenet/*/*")
+        #set_zs = [p for p in all_files if "z_set" in p and p.split("/")[-2] in self.model_list]
+        #shape_zs = [p for p in all_files if "z" in p and "_set" not in p and p.split("/")[-2] in self.model_list]
+        set_zs = [p for p in all_files if "z_set" in p and p.split("/")[-2]]
+        shape_zs = [p for p in all_files if "z" in p and "_set" not in p and p.split("/")[-2]]
         self.set2path = {p.split("/")[-1].split("_")[-1].replace(".pt", ""): p for p in set_zs}
         self.mod2code_path = {p.split("/")[-2]: p for p in shape_zs}
+        #import pdb;pdb.set_trace()
         # NOTE: set code_root here for transformer_model to load
         # opt.code_dir = self.code_dir
     
         self.text2shapepp = pd.read_csv('../raw_dataset/text2phrase.csv')
-#         with open("file.json", 'r') as f:
-#             all_id_list = json.load(f)
-        all_id_list = os.listdir("../raw_dataset/shapenet")
+        with open("file.json", 'r') as f:
+            all_id_list = json.load(f)
+        #import pdb;pdb.set_trace()
         self.sequences: List = all_id_list
-        seq_to_keep = self.sequences
-#         for seq in self.sequences:
-#             if self.text2shapepp.iloc[seq[0]]["model_id"] in self.model_list:
-#                 seq_to_keep.append(seq)
+      
+        seq_to_keep = []
+        for seq in self.sequences:
+            if self.text2shapepp.iloc[seq[0]]["model_id"] in self.model_list:
+                seq_to_keep.append(seq)
 
         self.sequences = seq_to_keep
         self.N = len(self.sequences)
         self.rng = np.random.default_rng(0)
+        self.counter = 0
 
 
     def __getitem__(self, index):
         try:
+            #import pdb;pdb.set_trace()
             seq = self.sequences[index]
-            t_1_ind = self.rng.integers(low=0, high=len(seq)-1)
-            t_1_row_ind = seq[t_1_ind]
-            t_2_row_ind = seq[t_1_ind+1]
+            if(len(seq)== 1):
+                t_1_ind = 0
+                t_1_row_ind = seq[t_1_ind]
+                t_2_row_ind = seq[t_1_ind]
+            else:
+                t_1_ind = self.rng.integers(low=0, high=len(seq)-1)
+                t_1_row_ind = seq[t_1_ind]
+                t_2_row_ind = seq[t_1_ind+1]
             t_1_row = self.text2shapepp.iloc[t_1_row_ind]
             t_2_row = self.text2shapepp.iloc[t_2_row_ind]
             t_2_text = t_2_row["phrase_texts"]
             t_1_text = t_1_row["phrase_texts"]
-
+            #import pdb;pdb.set_trace()
+            t_1_id = t_1_row["model_id"]
             if t_1_row["similar_model_id"] == '0':
                 t_1_id = t_1_row["model_id"]
                 t_1_code = torch.load(self.mod2code_path[t_1_id], map_location="cpu")
@@ -87,9 +99,10 @@ class Text2ShapePP(BaseDataset):
 
             if t_2_row["similar_model_id"] == '0':
                 t_2_id = t_2_row["model_id"]
-                similar_ids = [t_2_row["model_id"]] + t_2_row["similar_model_ids"]
-                choosen_one = np.random.choice(similar_ids, 1)
-
+                #import pdb;pdb.set_trace()
+                similar_ids = [t_2_row["model_id"]]
+                choosen_one = np.random.choice(similar_ids, 1)[0]
+                #import pdb;pdb.set_trace()
                 t_2_code = torch.load(self.mod2code_path[choosen_one], map_location="cpu")
                 
             else:
@@ -107,11 +120,13 @@ class Text2ShapePP(BaseDataset):
                 'cat_str': self.cat,
                 'path': t_1_id,
             }
+            
+            return ret
 
-        except:
-            return self.__getitem__(self.rng.integers(0, len(self)))
+        except Exception as ex:
+            return self.__getitem__(0)
 
-        return ret
+ 
     def __len__(self):
         return self.N
 

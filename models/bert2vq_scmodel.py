@@ -1,7 +1,7 @@
 
 import os
 from collections import OrderedDict
-from turtle import forward
+
 
 import numpy as np
 import einops
@@ -43,32 +43,20 @@ class BERT2VQSCModel(BaseModel):
         # Define Networks
         # -------------------------------
 
-        assert opt.vq_cfg is not None
         
-        bert_conf = OmegaConf.load(opt.bert_cfg)
-        vq_conf = OmegaConf.load(opt.vq_cfg)
+        #bert_conf = OmegaConf.load(opt.bert_cfg)
+ 
         
         # init resnet2vq network
-        opt.mlp_layers = 3
-        opt.mlp_hidden = 1024
         self.net = BERT2VQ(opt)
         self.net.to(opt.device)
-        
-        # init vqvae for decoding shapes
-        mparam = vq_conf.model.params
-        n_embed = mparam.n_embed
-        embed_dim = mparam.embed_dim
-        ddconfig = mparam.ddconfig
-        self.vqvae = PVQVAE(ddconfig, n_embed, embed_dim)
-        self.load_vqvae(opt.vq_ckpt)
-        self.vqvae.to(opt.device)
-        self.vqvae.eval()
 
         if self.isTrain:
             # ----------------------------------
             # define loss functions
             # ----------------------------------
-            self.criterion_nce = nn.CrossEntropyLoss()
+            #self.criterion_nce = nn.CrossEntropyLoss()
+            self.criterion_nce = nn.MSELoss()
             self.criterion_nce.to(opt.device)
 
             # ---------------------------------
@@ -76,51 +64,23 @@ class BERT2VQSCModel(BaseModel):
             # ---------------------------------
             self.optimizer = optim.AdamW([p for p in self.net.parameters() if p.requires_grad == True], lr=opt.lr)
 
-            self.scheduler = NoamLR(self.optimizer, warmup_steps=bert_conf.hyper_params.warmup_steps)
+            self.scheduler = NoamLR(self.optimizer, warmup_steps=10)
             
             self.optimizers = [self.optimizer]
             self.schedulers = [self.scheduler]
 
             self.print_networks(verbose=False)
-
-        
-        # resolution = resnet_conf.data.resolution
-        # self.resolution = resolution
-
-        # hyper-parameters for SDF
-        # if opt.dataset_mode in ['sdf', 'sdf_code', 'sdf_code_v0']:
-        #     nC = resolution
-        #     assert nC == 64, 'right now, only trained with sdf resolution = 64'
-        #     self.down_size = 8   # x: res, x_cube: res//8
-        #     self.cube_size = nC // self.down_size    # size per cube. nC=64, down_size=8 -> size=8 for each smaller cube
-        #     self.stride = nC // self.down_size
-        #     self.ncubes_per_dim = nC // self.cube_size
-
-        # setup renderer
-        # dist, elev, azim = 1.7, 20, 20   
-        # self.renderer = init_mesh_renderer(image_size=256, dist=dist, elev=elev, azim=azim, device=self.opt.device)
-
-        #
-        # self.Rt, self.S, self.vox_thres = init_snet_to_pix3dvox_params()
-
-    def load_vqvae(self, vq_ckpt):
-        assert type(vq_ckpt) == str         
-        state_dict = torch.load(vq_ckpt)
-        self.vqvae.load_state_dict(state_dict)
-        print(colored('[*] VQVAE: weight successfully load from: %s' % vq_ckpt, 'blue'))
     
     def set_input(self, input, gen_order=None):
-        # x, y = input
-        self.q2 = input['idx']
-        self.z1 = input['z_q']
-        self.z_shape = self.z1.shape
+        self.z_prev = input["z_set_prev"]
+        self.z_target = input["z_set_target"]
+        #self.z_shape = self.z1.shape
+        
 
-        self.text = input['text']
+        self.text = input['current_text']
 
-        # self.x_idx_seq = rearrange(self.x_idx, 'bs dz hz wz -> (dz hz wz) bs').contiguous() # to (T, B)
-        # self.x_idx = self.x_idx_seq.clone()
 
-        vars_list = ['q2', 'z1']
+        vars_list = ['z_prev']
 
         self.tocuda(var_names=vars_list)
     
@@ -128,13 +88,14 @@ class BERT2VQSCModel(BaseModel):
         pass
 
     def forward(self):
-        self.outp = self.net(self.text, self.z1)
+        self.outp = self.net(self.text, self.z_prev)
     
     def backward(self):
         '''backward pass for the Lang to (P)VQ-VAE code model'''
-        target = self.q2
+        target = self.z_target.to(self.outp.device)
         outp = self.outp
-        
+        target = rearrange(target, 'bs d1 d2 d3 c -> bs c d1 d2 d3')
+       
         loss_nll = self.criterion_nce(outp, target)
 
         self.loss = loss_nll

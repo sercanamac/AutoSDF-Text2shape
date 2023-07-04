@@ -56,7 +56,8 @@ class BERT2VQSCModel(BaseModel):
             # define loss functions
             # ----------------------------------
             #self.criterion_nce = nn.CrossEntropyLoss()
-            self.criterion_nce = nn.MSELoss()
+            self.criterion_nce = nn.MSELoss(reduction="sum")
+            #self.criterion_nce = nn.L1Loss(reduction="sum")
             self.criterion_nce.to(opt.device)
 
             # ---------------------------------
@@ -94,7 +95,8 @@ class BERT2VQSCModel(BaseModel):
         '''backward pass for the Lang to (P)VQ-VAE code model'''
         target = self.z_target.to(self.outp.device)
         outp = self.outp
-        target = rearrange(target, 'bs d1 d2 d3 c -> bs c d1 d2 d3')
+        #target = rearrange(target, 'bs d1 d2 d3 c -> bs c d1 d2 d3')
+        #import pdb;pdb.set_trace()
        
         loss_nll = self.criterion_nce(outp, target)
 

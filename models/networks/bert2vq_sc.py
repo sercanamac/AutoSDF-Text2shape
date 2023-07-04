@@ -29,7 +29,7 @@ class BERT2VQ(nn.Module):
         in_c = 1024
         #n_layers = opt.mlp_layers
         #hidden_size = opt.mlp_hidden
-
+        self.softmax = torch.nn.Softmax(dim=-1)
 
         
         
@@ -69,6 +69,11 @@ class BERT2VQ(nn.Module):
         x = rearrange(x, 'b d1 d2 d3 c -> b c d1 d2 d3')
         x = self.convt_layers(x)
         x = self.conv_out(x)
+        x = rearrange(x, 'bs c d1 d2 d3 -> bs d1 d2 d3 c')
+        x = torch.clamp(x, min=1e-3)
+        #import pdb;pdb.set_trace()
+        x = self.softmax(x)
+       
         # Extract BERT Features
         #tokenized = self.tokenizer(x,return_tensors='pt',padding=True).to(self.device)
         #x = self.bertmodel(**tokenized).pooler_output

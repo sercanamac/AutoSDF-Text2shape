@@ -122,5 +122,6 @@ class RandTransformer(nn.Module):
         outp = self.forward_transformer(inp, src_mask=src_mask)
         
         outp = self.dec_linear(outp)
+        
 
         return outp

@@ -34,6 +34,7 @@ class BERT2VQ(nn.Module):
         
         
         self.linear_in = nn.Linear(384, 512)
+        
         #self.linear_to3d = nn.Linear(1024, self.hz * self.wz * self.dz)
         #self.activation = nn.ReLU()
         #self.linear3d_to_conv = torch.nn.Conv3d(1, in_c, 3, 1, 1)

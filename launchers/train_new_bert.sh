@@ -5,8 +5,8 @@ NC='\033[0m' # No Color
 gpu=0
 lr=1e-4
 
-nepochs=20
-nepochs_decay=5
+nepochs=150
+nepochs_decay=150
 
 # model stuff
 model='bert2vqsc'
@@ -22,7 +22,7 @@ vq_cat='chair'
 
 # dataset stuff
 batch_size=32
-max_dataset_size=100000000000
+max_dataset_size=10000000
 trunc_thres=0.2
 display_freq=3000
 print_freq=25
@@ -31,7 +31,7 @@ today=$(date '+%m%d')
 me=`basename "$0"`
 me=$(echo $me | cut -d'.' -f 1)
 gpu_ids=0
-note='new-bert-2-prev_z_shape_input-try-2'
+note='new-bert-1'
 
 name="${model}-${dataset_mode}-LR${lr}-${note}"
 

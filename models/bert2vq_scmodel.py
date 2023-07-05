@@ -86,7 +86,15 @@ class BERT2VQSCModel(BaseModel):
         self.tocuda(var_names=vars_list)
     
     def inference(self, data, should_render=True, verbose=False):
-        pass
+        self.net.eval()
+        with torch.no_grad():
+            self.set_input(data)
+            self.forward()
+            target = self.z_target.to(self.outp.device)
+            loss_nll = self.criterion_nce(self.outp, target)
+            self.loss = loss_nll
+        
+        self.net.train()
 
     def forward(self):
         self.outp = self.net(self.text, self.z_prev)
@@ -94,11 +102,11 @@ class BERT2VQSCModel(BaseModel):
     def backward(self):
         '''backward pass for the Lang to (P)VQ-VAE code model'''
         target = self.z_target.to(self.outp.device)
-        outp = self.outp
+        #outp = self.outp
         #target = rearrange(target, 'bs d1 d2 d3 c -> bs c d1 d2 d3')
         #import pdb;pdb.set_trace()
        
-        loss_nll = self.criterion_nce(outp, target)
+        loss_nll = self.criterion_nce(self.outp, target)
 
         self.loss = loss_nll
 

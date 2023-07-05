@@ -109,6 +109,13 @@ def CreateDataset(opt):
         from datasets.ys_shapeset import ShapeNetZSets
         train_dataset = ShapeNetZSets()
         test_dataset = ShapeNetZSets(isTrain=False)
+    elif opt.dataset_mode == 'text2shape-seq':
+        from datasets.text2shape import Text2Shape
+        train_dataset = Text2Shape()
+        test_dataset = Text2Shape()
+        train_dataset.initialize(opt,isTrain=True)
+        test_dataset.initialize(opt, isTrain=False)
+        
         
 
     else:

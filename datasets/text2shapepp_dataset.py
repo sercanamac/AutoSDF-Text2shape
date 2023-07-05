@@ -20,6 +20,8 @@ from datasets.base_dataset import BaseDataset
 from typing import List
 
 hostname = socket.gethostname()
+import time
+import ast
 
 
 class Text2ShapePP(BaseDataset):
@@ -36,14 +38,18 @@ class Text2ShapePP(BaseDataset):
         self.cat_to_id = self.info['cats']
         self.id_to_cat = {v: k for k, v in self.cat_to_id.items()}
         self.model_list = []
-        with open(f'./filelists/{self.cat_to_id[cat]}_{phase}.lst') as f:
+        with open(f'./filelists/{self.cat_to_id[cat]}_train.lst') as f:
             lang_list_s = []
             model_list_s = []
             for l in f.readlines():
                 model_id = l.rstrip('\n')
                 self.model_list.append(model_id)
-        print(len(self.model_list))
-        all_files = glob.glob(f"../data/chairs/*/*")
+        with open(f'./filelists/{self.cat_to_id[cat]}_test.lst') as f:
+
+            for l in f.readlines():
+                model_id = l.rstrip('\n')
+                self.model_list.append(model_id)
+        all_files = glob.glob(f"../shap/*/*")
         set_zs = [p for p in all_files if "z_set" in p and p.split("/")[-2] in self.model_list]
         shape_zs = [p for p in all_files if "z" in p and "set" not in p and p.split("/")[-2] in self.model_list]
         self.set2path = {p.split("/")[-1].split("_")[-1].replace(".pt", ""): p for p in set_zs}
@@ -63,38 +69,57 @@ class Text2ShapePP(BaseDataset):
         self.sequences = seq_to_keep
         self.N = len(self.sequences)
         self.rng = np.random.default_rng(0)
-
+        self.cache = {}
+        self.cache_max = 50000
 
     def __getitem__(self, index):
         try:
 
             seq = self.sequences[index]
-            t_1_ind = self.rng.integers(low=0, high=len(seq)-1)
-            t_1_row_ind = seq[t_1_ind]
-            t_2_row_ind = seq[t_1_ind+1]
-            t_1_row = self.text2shapepp.iloc[t_1_row_ind]
+            t_1_ind = self.rng.integers(low=-1, high=len(seq)-1)
+            if t_1_ind == -1:
+                t_1_code = torch.fill_(torch.zeros(size=(8,8,8, 512)), value=1/512) 
+                t_1_id = ""
+                t_1_text = ""
+            else:
+
+                t_1_row_ind = seq[t_1_ind]
+                t_1_row = self.text2shapepp.iloc[t_1_row_ind]
+                t_1_text = t_1_row["phrase_texts"]
+                if t_1_row["similar_model_id"] == '0':
+                    t_1_id = t_1_row["model_id"]
+                    t_1_code = torch.load(self.mod2code_path[t_1_id], map_location="cpu")
+                else:
+                    t_1_id = t_1_row["model_id"]
+
+                    t_1_code = torch.load(self.set2path[str(t_1_row_ind)], map_location="cpu")
+            t_2_row_ind = seq[t_1_ind + 1]
             t_2_row = self.text2shapepp.iloc[t_2_row_ind]
             t_2_text = t_2_row["phrase_texts"]
-            t_1_text = t_1_row["phrase_texts"]
+            t_2_row_ind = seq[t_1_ind+1]
 
-            if t_1_row["similar_model_id"] == '0':
-                t_1_id = t_1_row["model_id"]
-                t_1_code = torch.load(self.mod2code_path[t_1_id], map_location="cpu")
-            else:
-                t_1_code = torch.load(self.set2path[str(t_1_row_ind)], map_location="cpu")
+
 
 
             if t_2_row["similar_model_id"] == '0':
                 t_2_id = t_2_row["model_id"]
-                t_2_code = torch.load(self.mod2code_path[t_2_id], map_location="cpu")
-            else:
-                t_2_code = torch.load(self.set2path[str(t_2_row_ind)], map_location="cpu")
+            
 
+                t_2_code = torch.load(self.mod2code_path[t_2_id], map_location="cpu")
+                
+            else:
+                t_2_id = t_2_row["model_id"]
+
+                similar_ids = [t_2_row["model_id"]] + ast.literal_eval(t_2_row["similar_model_id"])
+                choosen_one = similar_ids[-1]
+                t_2_code = torch.load(self.mod2code_path[str(choosen_one)], map_location="cpu")
+            
+            
             sampler = torch.distributions.categorical.Categorical(t_2_code)
             codeix = sampler.sample()
+            # codeix = t_2_code.permute(3,0,1,2)
             ret = {
-
-                'z_q': t_1_code,
+                'z_q': t_1_code.float(),
                 'idx': codeix,
                 'text': t_2_text,
                 'text_t1': t_1_text,
@@ -102,13 +127,14 @@ class Text2ShapePP(BaseDataset):
                 'cat_str': self.cat,
                 'path': t_1_id,
             }
-        except:
-            return self.__getitem__(self.rng.integers(0, len(self)))
+            return ret
 
-        return ret
+        except Exception as e:
+            print(e)
+            return self.__getitem__(np.random.randint(0, len(self)))
+
     def __len__(self):
         return self.N
 
     def name(self):
         return 'Text2ShapePP'
-

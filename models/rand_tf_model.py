@@ -254,6 +254,7 @@ class RandTransformerModel(BaseModel):
         with torch.no_grad():
             # auto-regressively gen
             pred = self.inp[:seq_len]
+            pred_probs = torch.zeros(size=(pred.shape[0], pred.shape[1], 512)).to(pred.device)
             for t in tqdm(range(seq_len, T), total=T-seq_len, desc='[*] autoregressively inferencing...'):
                 inp = pred
                 inp_pos = self.inp_pos[:t]
@@ -273,12 +274,14 @@ class RandTransformerModel(BaseModel):
                     # outp_t = top_k_probs(outp_t, k=topk)
                     outp_t = top_k_logits(outp_t, k=topk)
                 outp_t = F.softmax(outp_t, dim=-1) # compute prob
+                pred_probs = torch.cat([pred_probs, outp_t], dim=0)
                 outp_t = rearrange(outp_t, 't b nc -> (t b) nc')
                 pred_t = torch.multinomial(outp_t, num_samples=1).squeeze(1)
                 pred_t = rearrange(pred_t, '(t b) -> t b', t=1, b=B)
                 pred = torch.cat([pred, pred_t], dim=0)
+                
             
-            
+            self.x_probs = pred_probs[1:][torch.argsort(self.gen_order)]
             self.x_recon = self.vqvae.decode_enc_idices(self.x_idx,  z_spatial_dim=self.grid_size).to(self.opt.device) # could extract this as well
             self.x = self.x_recon
             pred = pred[1:][torch.argsort(self.gen_order)] # exclude pred[0] since it's <sos>

@@ -52,17 +52,13 @@ class BERT2VQSCModel(BaseModel):
         opt.mlp_layers = 3
         opt.mlp_hidden = 1024
         self.net = BERT2VQ(opt)
-        self.net.to(opt.device)
+        self.net.to("cuda")
         
         # init vqvae for decoding shapes
         mparam = vq_conf.model.params
         n_embed = mparam.n_embed
         embed_dim = mparam.embed_dim
         ddconfig = mparam.ddconfig
-        self.vqvae = PVQVAE(ddconfig, n_embed, embed_dim)
-        self.load_vqvae(opt.vq_ckpt)
-        self.vqvae.to(opt.device)
-        self.vqvae.eval()
 
         if self.isTrain:
             # ----------------------------------
@@ -102,12 +98,6 @@ class BERT2VQSCModel(BaseModel):
 
         #
         # self.Rt, self.S, self.vox_thres = init_snet_to_pix3dvox_params()
-
-    def load_vqvae(self, vq_ckpt):
-        assert type(vq_ckpt) == str         
-        state_dict = torch.load(vq_ckpt)
-        self.vqvae.load_state_dict(state_dict)
-        print(colored('[*] VQVAE: weight successfully load from: %s' % vq_ckpt, 'blue'))
     
     def set_input(self, input, gen_order=None):
         # x, y = input
@@ -170,7 +160,6 @@ class BERT2VQSCModel(BaseModel):
     def save(self, label):
 
         state_dict = {
-            # 'vqvae': self.vqvae.cpu().state_dict(),
             'bert2vq': self.net.cpu().state_dict(),
         }
 
@@ -178,7 +167,6 @@ class BERT2VQSCModel(BaseModel):
         save_path = os.path.join(self.save_dir, save_filename)
 
         torch.save(state_dict, save_path)
-        # self.vqvae.to(self.opt.device)
         self.net.to(self.opt.device)
 
     def load_ckpt(self, ckpt):
@@ -187,6 +175,5 @@ class BERT2VQSCModel(BaseModel):
         else:
             state_dict = ckpt
 
-        # self.vqvae.load_state_dict(state_dict['vqvae'])
         self.net.load_state_dict(state_dict['bert2vq'])
         print(colored('[*] weight successfully load from: %s' % ckpt, 'blue'))

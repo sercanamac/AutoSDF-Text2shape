@@ -9,7 +9,7 @@ nepochs=20
 nepochs_decay=5
 
 # model stuff
-model='bert2vqsc'
+model='bert2vqsc_v4'
 bert_cfg='configs/bert2vqsc.yaml'
 cat='chair'
 
@@ -31,7 +31,7 @@ today=$(date '+%m%d')
 me=`basename "$0"`
 me=$(echo $me | cut -d'.' -f 1)
 gpu_ids=0
-note='new-bert-2-prev_z_shape_input-try-2'
+note='network-bert-shapeset-shapeset-SmoothL1Loss'
 
 name="${model}-${dataset_mode}-LR${lr}-${note}"
 

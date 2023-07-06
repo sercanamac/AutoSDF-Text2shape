@@ -24,7 +24,7 @@ import torchvision.transforms as transforms
 from torch.hub import load_state_dict_from_url
 
 from models.base_model import BaseModel
-from models.networks.bert2vq_sc import BERT2VQ
+from models.networks.bert2vq_sc_v4 import BERT2VQ
 from models.networks.pvqvae_networks.auto_encoder import PVQVAE
 import utils
 from utils.util import NoamLR
@@ -44,20 +44,22 @@ class BERT2VQSCModel(BaseModel):
         # -------------------------------
 
         
-        #bert_conf = OmegaConf.load(opt.bert_cfg)
+        bert_conf = OmegaConf.load(opt.bert_cfg)
  
         
         # init resnet2vq network
         self.net = BERT2VQ(opt)
         self.net.to(opt.device)
+        self.loss=0
 
         if self.isTrain:
             # ----------------------------------
             # define loss functions
             # ----------------------------------
             #self.criterion_nce = nn.CrossEntropyLoss()
-            self.criterion_nce = nn.MSELoss(reduction="sum")
+            #self.criterion_nce = nn.MSELoss(reduction="sum")
             #self.criterion_nce = nn.L1Loss(reduction="sum")
+            self.criterion_nce = nn.SmoothL1Loss(reduction="sum")
             self.criterion_nce.to(opt.device)
 
             # ---------------------------------
@@ -102,11 +104,12 @@ class BERT2VQSCModel(BaseModel):
     def backward(self):
         '''backward pass for the Lang to (P)VQ-VAE code model'''
         target = self.z_target.to(self.outp.device)
+        #import pdb;pdb.set_trace()
         #outp = self.outp
         #target = rearrange(target, 'bs d1 d2 d3 c -> bs c d1 d2 d3')
         #import pdb;pdb.set_trace()
        
-        loss_nll = self.criterion_nce(self.outp, target)/self.outp.shape[0]
+        loss_nll = self.criterion_nce(self.outp, target) / self.outp.shape[0]
 
         self.loss = loss_nll
 

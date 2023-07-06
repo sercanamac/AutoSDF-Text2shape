@@ -26,6 +26,9 @@ def create_model(opt):
     elif opt.model == "bert2vqsc":
         from models.bert2vq_scmodel import BERT2VQSCModel
         model = BERT2VQSCModel()
+    elif opt.model == "bert2vqsc_v4":
+        from models.bert2vq_scmodel_v4 import BERT2VQSCModel
+        model = BERT2VQSCModel()
     elif opt.model == 'resnet2vq':
         from models.resnet2vq_model import ResNet2VQModel
         model = ResNet2VQModel()

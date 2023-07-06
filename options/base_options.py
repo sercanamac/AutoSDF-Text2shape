@@ -25,7 +25,7 @@ class BaseOptions():
         self.parser.add_argument('--name', type=str, default='experiment_name', help='name of the experiment. It decides where to store samples and models')
 
         # model stuff
-        self.parser.add_argument('--model', type=str, default='pvqvae', choices=['pvqvae', 'rand_tf', 'resnet2vq', 'bert2vq', 'bert2vqsc'], help='chooses which model to use.')
+        self.parser.add_argument('--model', type=str, default='pvqvae', choices=['pvqvae', 'rand_tf', 'resnet2vq', 'bert2vq', 'bert2vqsc', 'bert2vqsc_v4'], help='chooses which model to use.')
         self.parser.add_argument('--ckpt', type=str, default=None, help='ckpt to load.')
         self.parser.add_argument('--input_nc', type=int, default=3, help='# of input image channels')
         self.parser.add_argument('--output_nc', type=int, default=3, help='# of output image channels')

@@ -81,8 +81,8 @@ class Text2Shape(BaseDataset):
         if(previous_index==0):
             z_set_prev = torch.full((1,8,8,8,512), 1/512)
         else:
-            #z_set_prev = self.get_z_set(previous_row_index)
-            z_set_prev = self.get_z_shape(previous_row_index)
+            z_set_prev = self.get_z_set(previous_row_index)
+            #z_set_prev = self.get_z_shape(previous_row_index)
         
         z_set_target = self.get_z_set(next_row_index)
         

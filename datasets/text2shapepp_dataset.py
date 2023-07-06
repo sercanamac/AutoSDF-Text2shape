@@ -70,7 +70,6 @@ class Text2ShapePP(BaseDataset):
         self.N = len(self.sequences)
         self.rng = np.random.default_rng(0)
         self.cache = {}
-        self.cache_max = 50000
 
     def __getitem__(self, index):
         try:
@@ -88,11 +87,19 @@ class Text2ShapePP(BaseDataset):
                 t_1_text = t_1_row["phrase_texts"]
                 if t_1_row["similar_model_id"] == '0':
                     t_1_id = t_1_row["model_id"]
-                    t_1_code = torch.load(self.mod2code_path[t_1_id], map_location="cpu")
+                    if t_1_id not in self.cache:
+                        t_1_code = torch.load(self.mod2code_path[t_1_id], map_location="cpu")
+                        self.cache[t_1_id] = t_1_code
+                    else:
+                        t_1_code = self.cache[t_1_id]
                 else:
                     t_1_id = t_1_row["model_id"]
+                    if str(t_1_row_ind) not in self.cache:
 
-                    t_1_code = torch.load(self.set2path[str(t_1_row_ind)], map_location="cpu")
+                        t_1_code = torch.load(self.set2path[str(t_1_row_ind)], map_location="cpu")
+                        self.cache[str(t_1_row_ind)] = t_1_code
+                    else:
+                        t_1_code = self.cache[str(t_1_row_ind)]
             t_2_row_ind = seq[t_1_ind + 1]
             t_2_row = self.text2shapepp.iloc[t_2_row_ind]
             t_2_text = t_2_row["phrase_texts"]
@@ -104,19 +111,29 @@ class Text2ShapePP(BaseDataset):
             if t_2_row["similar_model_id"] == '0':
                 t_2_id = t_2_row["model_id"]
             
+                if t_2_id not in self.cache:
 
-                t_2_code = torch.load(self.mod2code_path[t_2_id], map_location="cpu")
+                    t_2_code = torch.load(self.mod2code_path[t_2_id], map_location="cpu")
+                    self.cache[t_2_id] = t_2_code
+                else:
+                    t_2_code = self.cache[t_2_id]
                 
             else:
                 t_2_id = t_2_row["model_id"]
 
                 similar_ids = [t_2_row["model_id"]] + ast.literal_eval(t_2_row["similar_model_id"])
-                choosen_one = similar_ids[-1]
-                t_2_code = torch.load(self.mod2code_path[str(choosen_one)], map_location="cpu")
-            
+                choosen_one = np.random.choice(similar_ids, 1)[0]
+                if str(choosen_one) not in self.cache:
+                    
+                    t_2_code = torch.load(self.mod2code_path[str(choosen_one)], map_location="cpu")
+                    self.cache[str(choosen_one)] = t_2_code
+                else:
+                    t_2_code = self.cache[str(choosen_one)]
+                    
             
             sampler = torch.distributions.categorical.Categorical(t_2_code)
             codeix = sampler.sample()
+            t_2_text = t_2_text.replace(t_1_text, "")
             # codeix = t_2_code.permute(3,0,1,2)
             ret = {
                 'z_q': t_1_code.float(),

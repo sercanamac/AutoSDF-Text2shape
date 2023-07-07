@@ -1,4 +1,6 @@
 an office chair,with long back,without arms
+a black object,with four legs,with cushoning
+a metal chair,with thin legs,with 2 curved armrests
 a high bar seat,has a molded curved seat,has a metal footrest and circular base
 a white metallic chair,with stand legs,and wheels
 wooden chair,with long back,and 4 long legs attached at the corners and has no handles

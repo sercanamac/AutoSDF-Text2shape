@@ -7,7 +7,7 @@ import  mcubes
 from omegaconf import OmegaConf
 from termcolor import colored, cprint
 from einops import rearrange, repeat
-from tqdm import tqdm
+from tqdm.notebook import tqdm
 
 import torch
 import torch.nn.functional as F
@@ -178,8 +178,9 @@ class RandTransformerModelOld(BaseModel):
                 self.gen_order = torch.cat([gen_order, remain])
             else:
                 self.gen_order = gen_order
-
+    
         x_idx_seq_shuf = self.x_idx_seq[self.gen_order.to(self.x_idx_seq.device)]
+        #import pdb;pdb.set_trace()
         x_seq_shuffled = torch.cat([torch.LongTensor(1, bs).fill_(self.sos), x_idx_seq_shuf], dim=0)  # T+1
         pos_shuffled = torch.cat([self.grid_table[:1].to(self.gen_order.device), self.grid_table[1:].to(self.gen_order.device)[self.gen_order]], dim=0)   # T+1, <sos> should always at start.
 
@@ -262,12 +263,12 @@ class RandTransformerModelOld(BaseModel):
                 # inp_mask = self.generate_square_subsequent_mask(transformer_inp.shape[0], self.opt.device)
                 outp = self.tf(inp, inp_pos, tgt_pos)
                 outp_t = outp[-1:]
-                # outp_t = F.softmax(outp_t, dim=-1) # compute prob
+                #outp_t = F.softmax(outp_t, dim=-1) # compute prob
                 outp_t = F.log_softmax(outp_t, dim=-1)
 
                 if prob is not None:
-                    # outp_t *= prob[t:t+1]
-                    # outp_t += prob[t:t+1] # logspace
+                    #outp_t *= prob[t:t+1]
+                    #outp_t += prob[t:t+1] # logspace
                     outp_t = (1-alpha) * outp_t + alpha * prob[t:t+1]
 
                 if topk is not None:

@@ -71,9 +71,9 @@ class BERT2VQ(nn.Module):
         x = self.convt_layers(x)
         x = self.conv_out(x)
         x = rearrange(x, 'bs c d1 d2 d3 -> bs d1 d2 d3 c')
-        x = torch.clamp(x, min=1e-3)
+        #x = torch.clamp(x, min=1e-3)
         #import pdb;pdb.set_trace()
-        x = self.softmax(x)
+        #x = self.softmax(x)
        
         # Extract BERT Features
         #tokenized = self.tokenizer(x,return_tensors='pt',padding=True).to(self.device)

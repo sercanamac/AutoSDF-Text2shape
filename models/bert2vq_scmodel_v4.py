@@ -13,8 +13,8 @@ from tqdm import tqdm
 
 import torch
 import torch.nn.functional as F
-from torch import nn, optim
-
+from torch import optim
+import torch.nn as nn
 # renderer
 import pytorch3d
 
@@ -56,10 +56,10 @@ class BERT2VQSCModel(BaseModel):
             # ----------------------------------
             # define loss functions
             # ----------------------------------
-            #self.criterion_nce = nn.CrossEntropyLoss()
+            self.criterion_nce = nn.CrossEntropyLoss()
             #self.criterion_nce = nn.MSELoss(reduction="sum")
             #self.criterion_nce = nn.L1Loss(reduction="sum")
-            self.criterion_nce = nn.SmoothL1Loss(reduction="sum")
+            #self.criterion_nce = nn.SmoothL1Loss(reduction="sum")
             self.criterion_nce.to(opt.device)
 
             # ---------------------------------
@@ -93,7 +93,8 @@ class BERT2VQSCModel(BaseModel):
             self.set_input(data)
             self.forward()
             target = self.z_target.to(self.outp.device)
-            loss_nll = self.criterion_nce(self.outp, target)/self.outp.shape[0]
+            self.outp = rearrange(self.outp, 'bs d1 d2 d3 c -> bs c d1 d2 d3')
+            loss_nll = self.criterion_nce(self.outp, target)
             self.loss = loss_nll
         
         self.net.train()
@@ -104,17 +105,14 @@ class BERT2VQSCModel(BaseModel):
     def backward(self):
         '''backward pass for the Lang to (P)VQ-VAE code model'''
         target = self.z_target.to(self.outp.device)
-        #import pdb;pdb.set_trace()
-        #outp = self.outp
-        #target = rearrange(target, 'bs d1 d2 d3 c -> bs c d1 d2 d3')
-        #import pdb;pdb.set_trace()
-       
-        loss_nll = self.criterion_nce(self.outp, target) / self.outp.shape[0]
+        
+        self.outp = rearrange(self.outp, 'bs d1 d2 d3 c -> bs c d1 d2 d3')
+        loss_nll = self.criterion_nce(self.outp, target)
 
         self.loss = loss_nll
 
         self.loss.backward()
-    
+        #self.outp = rearrange(self.outp, 'bs c d1 d2 d3 ->  ')
     def optimize_parameters(self, total_steps):
         # self.vqvae.train()
 

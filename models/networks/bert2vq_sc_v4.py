@@ -93,5 +93,5 @@ class BERT2VQ(nn.Module):
         x = self.norm_out(x)
         x = self.conv_out(x)
         x =  rearrange(x, ' b c d h w -> b d h w c')
-        x = self.softmax(x)
+        #x = self.softmax(x)
         return x

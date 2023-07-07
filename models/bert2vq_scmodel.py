@@ -55,8 +55,8 @@ class BERT2VQSCModel(BaseModel):
             # ----------------------------------
             # define loss functions
             # ----------------------------------
-            #self.criterion_nce = nn.CrossEntropyLoss()
-            self.criterion_nce = nn.MSELoss(reduction="sum")
+            self.criterion_nce = nn.CrossEntropyLoss()
+            #self.criterion_nce = nn.MSELoss(reduction="sum")
             #self.criterion_nce = nn.L1Loss(reduction="sum")
             self.criterion_nce.to(opt.device)
 
@@ -91,7 +91,7 @@ class BERT2VQSCModel(BaseModel):
             self.set_input(data)
             self.forward()
             target = self.z_target.to(self.outp.device)
-            loss_nll = self.criterion_nce(self.outp, target)/self.outp.shape[0]
+            loss_nll = self.criterion_nce(self.outp, target)
             self.loss = loss_nll
         
         self.net.train()
@@ -106,7 +106,7 @@ class BERT2VQSCModel(BaseModel):
         #target = rearrange(target, 'bs d1 d2 d3 c -> bs c d1 d2 d3')
         #import pdb;pdb.set_trace()
        
-        loss_nll = self.criterion_nce(self.outp, target)/self.outp.shape[0]
+        loss_nll = self.criterion_nce(self.outp, target)
 
         self.loss = loss_nll
 

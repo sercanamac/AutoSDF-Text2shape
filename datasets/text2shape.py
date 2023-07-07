@@ -4,6 +4,7 @@ import re
 import pandas as pd
 import torch
 import numpy as np
+from datasets.ShapeNetSample.py import ShapeNetSample
 
 TENSOR_EXTENSION = ".pt"
 Z_SHAPE_FILENAME = f"z_shape{TENSOR_EXTENSION}"
@@ -27,7 +28,7 @@ class Text2Shape(BaseDataset):
         self.counter2 = 0
         self.deleted = ["19c01531fed8ae0b260103f81999a1e1","24cd35785c38c6ccbdf89940ba47dea","30363681727c804095937f6e581cbd41","330d08738230faf0bc78bb6f3ca89e4c", "42e1e9b71b87787fc8687ff9b0b4e4ac","4602fbcc465603882aca5d156344f8d3","4e8d4cffee2c4361c612776a678dd571","6782b941de7b2199a344c33f76676fbd",
 "96e9b84ee4a556e8990561fc34164364","bca8d557dac05e082764cfba57a5de73","d764960666572084b1ea4e06e88051f3","d80133e363b9d2c2b5d06744a21b81d8"]
-    
+       # self.sample = ShapeNet
     
     def set_row_indices(self):
         if(self.isTrain):
@@ -81,15 +82,19 @@ class Text2Shape(BaseDataset):
         if(previous_index==0):
             z_set_prev = torch.full((1,8,8,8,512), 1/512)
         else:
-            z_set_prev = self.get_z_set(previous_row_index)
-            #z_set_prev = self.get_z_shape(previous_row_index)
+            #z_set_prev = self.get_z_set(previous_row_index)
+            z_set_prev = self.get_z_shape(previous_row_index)
         
         z_set_target = self.get_z_set(next_row_index)
+        #sampler = torch.distributions.categorical.Categorical(z_set_target)
+        #codeix = sampler.sample()
+        #if(codeix.shape[0] == 1):
+            #codeix = codeix.squeeze(0)
         
         return {
             "current_text":current_text,
             "z_set_prev":z_set_prev.float().squeeze(0),
-            "z_set_target":z_set_target.float().squeeze(0)
+            "z_set_target":codeix
         
         }
         

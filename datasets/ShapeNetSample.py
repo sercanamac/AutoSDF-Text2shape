@@ -55,7 +55,8 @@ class ShapeNetSample():
         ps = np.array(similar_scores)
         ps = np.exp(ps)
         ps /= np.sum(ps)
-        model_id = np.random.choice(similar_models,p=ps)
+        #model_id = np.random.choice(similar_models,p=ps)
+        model_id = similar_models[np.argmax(ps)]
         is_model_there = self.shape_dict.get(model_id, None)
         if(is_model_there is None):
             return "7f647aa4750640fdaf192dd05d69c7a2"

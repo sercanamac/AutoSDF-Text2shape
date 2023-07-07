@@ -306,13 +306,13 @@ class RandTransformerModel(BaseModel):
 #             target = rearrange(target,'bs d -> d bs')
 #             target = target.long()
             #self.image = self.vqvae.decode_enc_idices(self.x_idx,  z_spatial_dim=self.grid_size).to(self.opt.device)
-
+         
             self.x_recon = self.vqvae.decode_enc_idices(self.x_idx,  z_spatial_dim=self.grid_size).to(self.opt.device) # could extract this as well
             self.x = self.x_recon
             pred = pred[1:][torch.argsort(self.gen_order)] # exclude pred[0] since it's <sos>
             self.x_recon_tf = self.vqvae.decode_enc_idices(pred, z_spatial_dim=self.grid_size).to(self.opt.device)
             self.pred = pred
-
+          
         self.tf.train()
 
     # application func

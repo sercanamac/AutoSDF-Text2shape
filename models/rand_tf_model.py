@@ -272,13 +272,9 @@ class RandTransformerModel(BaseModel):
                 z_set = self.z_set[:t]
                 # inp_mask = self.generate_square_subsequent_mask(transformer_inp.shape[0], self.opt.device)
                 outp = self.tf(inp, inp_pos, tgt_pos, z_set)
-                outp_t = outp[-1:]
-               
-  
-             
-                 
+                outp_t = outp[-1:]                 
                 #outp_t = F.softmax(outp_t, dim=-1) # compute prob
-                #outp_t = F.log_softmax(outp_t, dim=-1)
+                outp_t = F.log_softmax(outp_t, dim=-1)
 
                 if prob is not None:
                     # outp_t *= prob[t:t+1]

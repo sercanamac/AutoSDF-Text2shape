@@ -246,11 +246,13 @@ class RandTransformerModelOld(BaseModel):
                 seq_len = len(gen_order)+1
                 seq_len = 1
         self.set_input(data, gen_order=gen_order)
+       
 
         T = self.x_idx_seq.shape[0] + 1 # +1 since <sos>
         B = self.x_idx_seq.shape[1]
         if prob is not None:
             prob = prob[self.gen_order]
+            #import pdb;pdb.set_trace()
             prob = torch.cat([prob[:1], prob])
         with torch.no_grad():
             # auto-regressively gen
@@ -269,8 +271,8 @@ class RandTransformerModelOld(BaseModel):
                 if prob is not None:
                     #outp_t *= prob[t:t+1]
                     #outp_t += prob[t:t+1] # logspace
+                    #outp_t = (1-alpha) * outp_t + alpha * prob[t:t+1]
                     outp_t = (1-alpha) * outp_t + alpha * prob[t:t+1]
-
                 if topk is not None:
                     # outp_t = top_k_probs(outp_t, k=topk)
                     outp_t = top_k_logits(outp_t, k=topk)
@@ -279,6 +281,7 @@ class RandTransformerModelOld(BaseModel):
                 outp_t = rearrange(outp_t, 't b nc -> (t b) nc')
                 pred_t = torch.multinomial(outp_t, num_samples=1).squeeze(1)
                 pred_t = rearrange(pred_t, '(t b) -> t b', t=1, b=B)
+         
                 pred = torch.cat([pred, pred_t], dim=0)
                 
             

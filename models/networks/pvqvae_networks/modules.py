@@ -11,6 +11,7 @@ def nonlinearity(x):
     return x*torch.sigmoid(x)
 
 def Normalize(in_channels, use_bn=False):
+    #use_bn = True
     if in_channels <= 32:
         num_groups = in_channels // 4
     else:

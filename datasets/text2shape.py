@@ -4,7 +4,7 @@ import re
 import pandas as pd
 import torch
 import numpy as np
-from datasets.ShapeNetSample.py import ShapeNetSample
+#from datasets.ShapeNetSample.py import ShapeNetSample
 
 TENSOR_EXTENSION = ".pt"
 Z_SHAPE_FILENAME = f"z_shape{TENSOR_EXTENSION}"
@@ -82,19 +82,36 @@ class Text2Shape(BaseDataset):
         if(previous_index==0):
             z_set_prev = torch.full((1,8,8,8,512), 1/512)
         else:
-            #z_set_prev = self.get_z_set(previous_row_index)
-            z_set_prev = self.get_z_shape(previous_row_index)
+            z_set_prev = self.get_z_set(previous_row_index)
+            #z_set_prev = self.get_z_shape(previous_row_index)
         
+        #z_set_target = self.get_z_shape(next_row_index)
         z_set_target = self.get_z_set(next_row_index)
-        #sampler = torch.distributions.categorical.Categorical(z_set_target)
-        #codeix = sampler.sample()
-        #if(codeix.shape[0] == 1):
-            #codeix = codeix.squeeze(0)
+        sampler = torch.distributions.categorical.Categorical(z_set_prev)
+        z_set_prev = sampler.sample()
+        #z_shape_target = self.get_z_shape(next_row_index)
+        
+        
+        
+#         sampler2 = torch.distributions.categorical.Categorical(z_shape_target)
+#         codeix_zshape = sampler2.sample()
+        
+        
+        sampler = torch.distributions.categorical.Categorical(z_set_target)
+        codeix_zset = sampler.sample()
+        
+        
+#         if(codeix_zshape.shape[0] == 1):
+#             codeix_zshape = codeix_zshape.squeeze(0)
+        if(codeix_zset.shape[0] == 1):
+            codeix_zset = codeix_zset.squeeze(0)
         
         return {
             "current_text":current_text,
             "z_set_prev":z_set_prev.float().squeeze(0),
-            "z_set_target":codeix
+            "z_set_target":z_set_target,
+            #"z_shape_target":codeix_zshape,
+            "z_set_target": codeix_zset
         
         }
         

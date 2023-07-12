@@ -258,6 +258,8 @@ class RandTransformerModel(BaseModel):
         T = self.x_idx_seq.shape[0] + 1 # +1 since <sos>
         B = self.x_idx_seq.shape[1]
         if prob is not None:
+            #import pdb;pdb.set_trace()
+            prob = rearrange(prob, 'bs d1 d2 d3 c -> (d1 d2 d3) bs c')
             prob = prob[self.gen_order]
             prob = torch.cat([prob[:1], prob])
         with torch.no_grad():
@@ -296,7 +298,10 @@ class RandTransformerModel(BaseModel):
                     self.outp_concat = torch.cat([self.outp_concat,outp_t])
                     
                 
-            
+
+            outp_reshaped = rearrange(self.outp_concat, '(bs c1 c2 c3) c-> (c1 c2 c3) bs  c' ,bs=5,c1=8,c2=8, c3=8)
+            outp_reshaped = outp_reshaped[torch.argsort(self.gen_order)]
+            self.outp_concat = rearrange(outp_reshaped, '(c1 c2 c3) bs c -> bs c1 c2 c3 c', c1=8,c2=8,c3=8) 
             #target = Categorical(self.z_shape_og).sample().to(self.opt.device)
 #             #target = target.flatten(start_dim=1)
 #             target = rearrange(target,'bs d -> d bs')

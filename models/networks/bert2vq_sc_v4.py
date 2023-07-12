@@ -44,7 +44,7 @@ class BERT2VQ(nn.Module):
         #self.linear_to3d = nn.Linear(1024, self.hz * self.wz * self.dz)
         self.activation = nn.ReLU()
         #self.linear3d_to_conv = torch.nn.Conv3d(1, in_c, 3, 1, 1)
-        in_c = 2
+        in_c = 1024
         for i in range(nblocks):
             out_c = 512
             convt_layers.append(PVQVAEResnetBlock(in_channels=in_c, out_channels=out_c, temb_channels=0, dropout=0.1))
@@ -81,24 +81,25 @@ class BERT2VQ(nn.Module):
         # Map to 3D space
         
         x = self.linear_in2(x)
-        mean, std, var = torch.mean(x), torch.std(x), torch.var(x)
-        x = (x-mean)/std
-        
-        meanz,stdz,varz = torch.mean(z1), torch.std(z1), torch.var(z1)
-        z1 = (z1-meanz) / stdz
+        #mean, std, var = torch.mean(x), torch.std(x), torch.var(x)
+        #x = (x-mean)/std
+        x = repeat(x, 'bs s -> bs repeat s', repeat=512)
+        #meanz,stdz,varz = torch.mean(z1), torch.std(z1), torch.var(z1)
+        #z1 = (z1-meanz) / stdz
         #import pdb;pdb.set_trace()
 #         for l in self.mlp:
 #             x = l(x)
-        x = x.unsqueeze(1)
-        z1 = z1.unsqueeze(1)
-        
+        #x = x.unsqueeze(1)
+        #z1 = z1.unsqueeze(1)
+      
         #x = self.linear_to3d(x).unsqueeze(1)
-        x = rearrange(x, 'b c (d h w) -> b c d h w', d=8, h=8, w=8)
-
+        x = rearrange(x, 'b c (d h w) -> b d h w c', d=8, h=8, w=8)
+        
 
         #x = self.linear3d_to_conv(x)
-        x = torch.cat([x, z1], axis=1)
-    
+        x = torch.cat([x, z1], axis= -1)
+        x = rearrange(x, 'b d1 d2 d3 c -> b c d1 d2 d3')
+        #import pdb;pdb.set_trace()        
         x = self.convt_layers(x)
 
 

@@ -4,7 +4,7 @@ import re
 import pandas as pd
 import torch
 import numpy as np
-#from datasets.ShapeNetSample.py import ShapeNetSample
+from datasets.ShapeNetSample import ShapeNetSample
 
 TENSOR_EXTENSION = ".pt"
 Z_SHAPE_FILENAME = f"z_shape{TENSOR_EXTENSION}"
@@ -28,7 +28,7 @@ class Text2Shape(BaseDataset):
         self.counter2 = 0
         self.deleted = ["19c01531fed8ae0b260103f81999a1e1","24cd35785c38c6ccbdf89940ba47dea","30363681727c804095937f6e581cbd41","330d08738230faf0bc78bb6f3ca89e4c", "42e1e9b71b87787fc8687ff9b0b4e4ac","4602fbcc465603882aca5d156344f8d3","4e8d4cffee2c4361c612776a678dd571","6782b941de7b2199a344c33f76676fbd",
 "96e9b84ee4a556e8990561fc34164364","bca8d557dac05e082764cfba57a5de73","d764960666572084b1ea4e06e88051f3","d80133e363b9d2c2b5d06744a21b81d8"]
-       # self.sample = ShapeNet
+        self.sample = ShapeNetSample()
     
     def set_row_indices(self):
         if(self.isTrain):
@@ -60,12 +60,27 @@ class Text2Shape(BaseDataset):
             return torch.full((1,8,8,8,512), 1/512)
         file_name = "z_shape.pt"
         path = f"{self.get_shape_directory(shape_id)}/{file_name}"
-        return torch.load(path, map_location="cpu")    
+        return torch.load(path, map_location="cpu")
+    
+    
+    def get_z_shape_direct(self,shape_id):
+        file_name = "z_shape.pt"
+        path = f"{self.get_shape_directory(shape_id)}/{file_name}"
+        return torch.load(path, map_location="cpu")
+    
+    def get_z_shape_id(self,row_index):
+        shape_id = self.text2shapepp.iloc[row_index]["model_id"]
+        if(shape_id in self.deleted):
+            return "ff9915c51ece4848cfc689934e433906"
+        #import pdb;pdb.set_trace()
+        return shape_id
+      
         
         
     def __getitem__(self, index):
         seq_dict = self.sequences[self.row_indices[index]]
         seq = seq_dict["sequence"]
+        is_reset=False
         current_index = seq_dict["index"]
         previous_index = seq_dict["previous_index"]
         next_index = seq_dict["next_index"]
@@ -80,38 +95,38 @@ class Text2Shape(BaseDataset):
             current_text = current_text.replace(previous_text,'')
             current_text = re.sub(r'[^\w\s]','', current_text).strip()
         if(previous_index==0):
+            is_reset = True
             z_set_prev = torch.full((1,8,8,8,512), 1/512)
         else:
             z_set_prev = self.get_z_set(previous_row_index)
             #z_set_prev = self.get_z_shape(previous_row_index)
         
-        #z_set_target = self.get_z_shape(next_row_index)
-        z_set_target = self.get_z_set(next_row_index)
-        sampler = torch.distributions.categorical.Categorical(z_set_prev)
-        z_set_prev = sampler.sample()
-        #z_shape_target = self.get_z_shape(next_row_index)
+
+        z_shape_id = self.get_z_shape_id(current_row_index)
+        z_shape_id = self.sample.sample(z_shape_id,current_row_index)
+        z_set_target = self.get_z_shape_direct(z_shape_id)
+        z_shape_target = self.get_z_shape(current_row_index)
+         
+        #import pdb;pdb.set_trace()
         
-        
-        
-#         sampler2 = torch.distributions.categorical.Categorical(z_shape_target)
-#         codeix_zshape = sampler2.sample()
+        sampler2 = torch.distributions.categorical.Categorical(z_shape_target)
+        codeix_zshape = sampler2.sample()
         
         
         sampler = torch.distributions.categorical.Categorical(z_set_target)
         codeix_zset = sampler.sample()
         
-        
-#         if(codeix_zshape.shape[0] == 1):
-#             codeix_zshape = codeix_zshape.squeeze(0)
         if(codeix_zset.shape[0] == 1):
             codeix_zset = codeix_zset.squeeze(0)
         
         return {
             "current_text":current_text,
             "z_set_prev":z_set_prev.float().squeeze(0),
-            "z_set_target":z_set_target,
+            #"z_set_target":z_set_target,
             #"z_shape_target":codeix_zshape,
-            "z_set_target": codeix_zset
+            "z_set_target":codeix_zset,
+            "is_reset": is_reset,
+            #"z_shape": codeix_zshape
         
         }
         

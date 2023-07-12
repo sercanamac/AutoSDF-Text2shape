@@ -31,7 +31,7 @@ today=$(date '+%m%d')
 me=`basename "$0"`
 me=$(echo $me | cut -d'.' -f 1)
 gpu_ids=0
-note='july-8-network-normalized-input-to-bert'
+note='july-9-network-normalized-input-to-bert-concat-cross-entropy-FINAL-FINAL'
 
 name="${model}-${dataset_mode}-LR${lr}-${note}"
 

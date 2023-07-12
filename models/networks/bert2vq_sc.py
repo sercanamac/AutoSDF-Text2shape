@@ -62,10 +62,10 @@ class BERT2VQ(nn.Module):
       
         x = torch.Tensor(x).to(z1.device)
         x = self.linear_in(x)
-        #import pdb;pdb.set_trace()
+        import pdb;pdb.set_trace()
         x = repeat(x, 'bs s -> bs repeat s', repeat=512)
         x = rearrange(x, 'bs (d1 d2 d3) f -> bs d1 d2 d3 f', d1=8,d2=8,d3=8)
-        #import pdb;pdb.set_trace()
+        import pdb;pdb.set_trace()
         x = torch.concat((z1, x),dim =-1)
         x = rearrange(x, 'b d1 d2 d3 c -> b c d1 d2 d3')
         x = self.convt_layers(x)
